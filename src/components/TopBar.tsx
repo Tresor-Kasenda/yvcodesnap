@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, memo, useEffect } from 'react';
+import { Cloud } from 'lucide-react';
 import { useCanvasStore } from '../store/canvasStore';
 import { useRecentSnapsStore } from '../store/recentSnapsStore';
 import { useAuthStore } from '../store/authStore';
@@ -8,11 +9,9 @@ import type Konva from 'konva';
 import { useNavigate } from 'react-router-dom';
 import RecentSnapsDropdown from './RecentSnapsDropdown';
 import UserMenu from './auth/UserMenu';
-import CloudSnapsManager from './CloudSnapsManager';
 import { toast } from 'sonner';
 import SelectField from './ui/SelectField';
 import ThemeToggle from './ThemeToggle';
-import { Cloud } from 'lucide-react';
 
 interface TopBarProps {
   stageRef: React.RefObject<Konva.Stage | null>;
@@ -485,13 +484,10 @@ const TopBar: React.FC<TopBarProps> = ({
 
           <div className="hidden sm:block h-6 w-px bg-neutral-200 dark:bg-white/10" />
 
-          {/* Auth & Cloud */}
+          {/* Auth */}
           <div className="flex items-center gap-2">
             {user ? (
-              <>
-                <CloudSnapsManager />
-                <UserMenu />
-              </>
+              <UserMenu />
             ) : (
               <button
                 onClick={() => navigate('/login')}
