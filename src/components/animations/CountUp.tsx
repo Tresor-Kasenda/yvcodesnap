@@ -1,5 +1,5 @@
 import { motion, useSpring, useTransform } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 
 interface CountUpProps {
   value: number;
@@ -8,7 +8,7 @@ interface CountUpProps {
   className?: string;
 }
 
-export const CountUp = ({
+const CountUpComponent = ({
   value,
   duration = 2,
   suffix = '',
@@ -25,6 +25,11 @@ export const CountUp = ({
 
   useEffect(() => {
     spring.set(value);
+
+    // Cleanup: Stop spring animation when component unmounts
+    return () => {
+      spring.stop();
+    };
   }, [spring, value]);
 
   return (
@@ -34,3 +39,5 @@ export const CountUp = ({
     </motion.span>
   );
 };
+
+export const CountUp = memo(CountUpComponent);

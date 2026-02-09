@@ -1,18 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { Check, ChevronRight, Zap } from 'lucide-react';
 import { onboardingCopy, onboardingOptions } from '../../content/onboarding';
 import { productBrand } from '../../content/product';
 import { useAuthStore } from '../../store/authStore';
 import type { OnboardingPreferences } from '../../types';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
+
+type OptionStepContent = {
+  type: 'options';
+  title: string;
+  subtitle: string;
+  options: Array<{ value: string; label: string; description: string }>;
+  selectedValue: string | null;
+  onSelect: (value: string) => void;
+};
+
+type InputStepContent = {
+  type: 'input';
+  title: string;
+  subtitle: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+};
+
+type StepContent = OptionStepContent | InputStepContent;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { user, hasCompletedOnboarding, completeOnboarding } = useAuthStore();
+  const { user, profile, hasCompletedOnboarding, completeOnboarding } = useAuthStore();
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [fullName, setFullName] = useState('');
   const [useCase, setUseCase] = useState<OnboardingPreferences['useCase'] | null>(null);
   const [experienceLevel, setExperienceLevel] = useState<OnboardingPreferences['experienceLevel'] | null>(null);
   const [primaryFormat, setPrimaryFormat] = useState<OnboardingPreferences['primaryFormat'] | null>(null);
@@ -34,9 +56,38 @@ export default function OnboardingPage() {
     };
   }, []);
 
-  const stepContent = useMemo(() => {
+  useEffect(() => {
+    if (fullName.trim().length > 0) {
+      return;
+    }
+
+    const profileName = profile?.full_name?.trim() ?? '';
+    const metadataName = typeof user?.user_metadata?.full_name === 'string'
+      ? user.user_metadata.full_name.trim()
+      : '';
+
+    const initialName = profileName || metadataName;
+    if (initialName) {
+      setFullName(initialName);
+    }
+  }, [fullName, profile?.full_name, user]);
+
+  const stepContent = useMemo<StepContent>(() => {
     if (stepIndex === 0) {
       return {
+        type: 'input',
+        title: 'What is your name?',
+        subtitle: 'Your workspace will use it in greetings and shared exports.',
+        label: 'Full name',
+        placeholder: 'e.g. Maria Johnson',
+        value: fullName,
+        onChange: setFullName,
+      };
+    }
+
+    if (stepIndex === 1) {
+      return {
+        type: 'options',
         title: 'What type of content do you create most?',
         subtitle: 'We will adapt your default workspace to match this workflow.',
         options: onboardingOptions.useCases,
@@ -45,8 +96,9 @@ export default function OnboardingPage() {
       };
     }
 
-    if (stepIndex === 1) {
+    if (stepIndex === 2) {
       return {
+        type: 'options',
         title: 'What is your current level?',
         subtitle: 'This helps us choose the right balance between guidance and flexibility.',
         options: onboardingOptions.experienceLevels,
@@ -55,8 +107,9 @@ export default function OnboardingPage() {
       };
     }
 
-    if (stepIndex === 2) {
+    if (stepIndex === 3) {
       return {
+        type: 'options',
         title: 'What format do you publish most?',
         subtitle: 'We prioritize templates and presets for your main output format.',
         options: onboardingOptions.formats,
@@ -66,15 +119,18 @@ export default function OnboardingPage() {
     }
 
     return {
+      type: 'options',
       title: 'How do you want to start?',
       subtitle: 'Pick your preferred path and we will personalize your workspace.',
       options: onboardingOptions.planIntents,
       selectedValue: planIntent,
       onSelect: (value: string) => setPlanIntent(value as OnboardingPreferences['planIntent']),
     };
-  }, [stepIndex, useCase, experienceLevel, primaryFormat, planIntent]);
+  }, [stepIndex, fullName, useCase, experienceLevel, primaryFormat, planIntent]);
 
-  const canContinue = Boolean(stepContent.selectedValue);
+  const canContinue = stepContent.type === 'input'
+    ? stepContent.value.trim().length >= 2
+    : Boolean(stepContent.selectedValue);
 
   const handleBack = () => {
     setError('');
@@ -85,7 +141,14 @@ export default function OnboardingPage() {
 
   const handleContinue = async () => {
     setError('');
-    if (!canContinue || saving) {
+    if (saving) {
+      return;
+    }
+
+    if (!canContinue) {
+      if (stepContent.type === 'input') {
+        setError('Please enter your name to continue.');
+      }
       return;
     }
 
@@ -94,13 +157,14 @@ export default function OnboardingPage() {
       return;
     }
 
-    if (!useCase || !experienceLevel || !primaryFormat || !planIntent) {
+    if (!fullName || !useCase || !experienceLevel || !primaryFormat || !planIntent) {
       setError('Please complete every step before continuing.');
       return;
     }
 
     setSaving(true);
     const result = await completeOnboarding({
+      fullName: fullName.trim(),
       useCase,
       experienceLevel,
       primaryFormat,
@@ -184,39 +248,57 @@ export default function OnboardingPage() {
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{stepContent.subtitle}</p>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {stepContent.options.map((option) => {
-              const selected = option.value === stepContent.selectedValue;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => stepContent.onSelect(option.value)}
-                  className={`text-left rounded-2xl border px-4 py-4 transition-all ${
-                    selected
-                      ? 'border-blue-500 bg-blue-50/90 dark:bg-blue-500/10'
-                      : 'border-neutral-200 dark:border-white/10 bg-white/60 dark:bg-white/5 hover:border-blue-300 dark:hover:border-blue-500/40'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-sm sm:text-base">
-                        {option.label}
-                      </h3>
-                      <p className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
-                        {option.description}
-                      </p>
+          {stepContent.type === 'input' ? (
+            <div className="mt-6">
+              <label htmlFor="onboarding-full-name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                {stepContent.label}
+              </label>
+              <input
+                id="onboarding-full-name"
+                type="text"
+                value={stepContent.value}
+                onChange={(event) => stepContent.onChange(event.target.value)}
+                placeholder={stepContent.placeholder}
+                autoComplete="name"
+                maxLength={80}
+                className="mt-2 w-full rounded-2xl border border-neutral-300 dark:border-white/15 bg-white dark:bg-neutral-900/60 px-4 py-3 text-sm sm:text-base text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+              />
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {stepContent.options.map((option) => {
+                const selected = option.value === stepContent.selectedValue;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => stepContent.onSelect(option.value)}
+                    className={`text-left rounded-2xl border px-4 py-4 transition-all ${
+                      selected
+                        ? 'border-blue-500 bg-blue-50/90 dark:bg-blue-500/10'
+                        : 'border-neutral-200 dark:border-white/10 bg-white/60 dark:bg-white/5 hover:border-blue-300 dark:hover:border-blue-500/40'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-sm sm:text-base">
+                          {option.label}
+                        </h3>
+                        <p className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">
+                          {option.description}
+                        </p>
+                      </div>
+                      {selected && (
+                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center shrink-0">
+                          <Check className="w-4 h-4" />
+                        </span>
+                      )}
                     </div>
-                    {selected && (
-                      <span className="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center shrink-0">
-                        <Check className="w-4 h-4" />
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {error && (
             <p className="mt-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3">

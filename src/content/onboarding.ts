@@ -13,7 +13,7 @@ type OnboardingOption<T extends string> = {
 
 export const onboardingCopy = {
   title: 'Let us personalize your workspace',
-  subtitle: 'A quick onboarding in 4 steps to adapt the experience to your goals.',
+  subtitle: 'A quick onboarding in 5 steps to adapt the experience to your goals.',
   stepLabel: 'Step',
   continueCta: 'Continue',
   backCta: 'Back',

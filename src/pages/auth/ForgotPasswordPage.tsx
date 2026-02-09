@@ -36,8 +36,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout
-      title={authPageCopy.forgotPassword.title}
-      subtitle={authPageCopy.forgotPassword.subtitle}
       footer={
         <p>
           {authPageCopy.forgotPassword.helperPrimary}{' '}
@@ -47,6 +45,15 @@ export default function ForgotPasswordPage() {
         </p>
       }
     >
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white">
+          {authPageCopy.forgotPassword.title}
+        </h1>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {authPageCopy.forgotPassword.subtitle}
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthTextField
           id="email"

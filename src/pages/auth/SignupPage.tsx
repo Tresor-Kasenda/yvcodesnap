@@ -7,6 +7,7 @@ import { authCommonCopy, authPageCopy } from '../../content/auth';
 import { AuthFeedback, AuthSocialActions, AuthTextField } from '../../components/auth';
 import { authPrimaryButtonClass, authSecondaryLinkClass } from './styles';
 import AuthLayout from './AuthLayout';
+import { useAriaAnnounce } from '../../hooks/useAriaAnnounce';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // Announce errors and messages to screen readers
+  useAriaAnnounce(error, 'assertive');
+  useAriaAnnounce(message, 'polite');
 
   const clearFeedback = useCallback(() => {
     setError('');
@@ -33,6 +38,8 @@ export default function SignupPage() {
         if (result.error) {
           setError(result.error);
         } else {
+          // Wait for auth state to update before reading fresh state
+          await new Promise(resolve => setTimeout(resolve, 0));
           const { user, hasCompletedOnboarding } = useAuthStore.getState();
           if (user) {
             navigate(hasCompletedOnboarding ? '/editor' : '/onboarding');

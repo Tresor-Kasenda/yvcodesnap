@@ -312,10 +312,25 @@ export type OnboardingPrimaryFormat = 'social-posts' | 'presentations' | 'tutori
 export type OnboardingPlanIntent = 'free' | 'pro-trial' | 'team';
 
 export interface OnboardingPreferences {
+  fullName: string;
   useCase: OnboardingUseCase;
   experienceLevel: OnboardingExperienceLevel;
   primaryFormat: OnboardingPrimaryFormat;
   planIntent: OnboardingPlanIntent;
+}
+
+export interface UserProfile {
+  id: string;
+  full_name: string | null;
+  subscription_tier: 'free' | 'pro';
+  onboarding_completed: boolean;
+  onboarding_completed_at: string | null;
+  onboarding_use_case: OnboardingUseCase | null;
+  onboarding_experience_level: OnboardingExperienceLevel | null;
+  onboarding_primary_format: OnboardingPrimaryFormat | null;
+  onboarding_plan_intent: OnboardingPlanIntent | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserMetadata {

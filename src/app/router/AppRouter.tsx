@@ -9,6 +9,7 @@ import OnboardingPage from '../../pages/auth/OnboardingPage';
 import SignupPage from '../../pages/auth/SignupPage';
 import RequireAuth from './RequireAuth';
 import RequireOnboarding from './RequireOnboarding';
+import { AuthErrorBoundary } from '../../components/auth/AuthErrorBoundary';
 
 export default function AppRouter() {
   return (
@@ -16,11 +17,11 @@ export default function AppRouter() {
       <Route element={<LandingLayout />}>
         <Route path="/" element={<LandingPage />} />
       </Route>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth" element={<AuthErrorBoundary><AuthPage /></AuthErrorBoundary>} />
+      <Route path="/login" element={<AuthErrorBoundary><LoginPage /></AuthErrorBoundary>} />
       <Route path="/auth/login" element={<Navigate to="/login" replace />} />
-      <Route path="/auth/signup" element={<SignupPage />} />
-      <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/signup" element={<AuthErrorBoundary><SignupPage /></AuthErrorBoundary>} />
+      <Route path="/auth/forgot-password" element={<AuthErrorBoundary><ForgotPasswordPage /></AuthErrorBoundary>} />
       <Route
         path="/onboarding"
         element={(

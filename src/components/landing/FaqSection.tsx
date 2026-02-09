@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animationVariants';
 import { faqs } from './data';
 
-export function FaqSection() {
+function FaqSectionComponent() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
@@ -66,11 +66,16 @@ export function FaqSection() {
                   transition: { duration: 0.2 },
                 }}
                 className="w-full px-6 py-5 flex items-center justify-between gap-4 text-left"
+                aria-expanded={openFaq === index}
+                aria-controls={`faq-answer-${index}`}
+                id={`faq-question-${index}`}
+                type="button"
               >
                 <span className="font-semibold text-neutral-900 dark:text-white">{faq.question}</span>
                 <motion.div
                   animate={{ rotate: openFaq === index ? 180 : 0 }}
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  aria-hidden="true"
                 >
                   <ChevronDown className="w-5 h-5 text-neutral-500 shrink-0" />
                 </motion.div>
@@ -96,6 +101,9 @@ export function FaqSection() {
                       },
                     }}
                     style={{ overflow: 'hidden' }}
+                    id={`faq-answer-${index}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${index}`}
                   >
                     <p className="px-6 pb-5 text-neutral-600 dark:text-neutral-400 leading-relaxed">
                       {faq.answer}
@@ -110,3 +118,5 @@ export function FaqSection() {
     </motion.section>
   );
 }
+
+export const FaqSection = memo(FaqSectionComponent);

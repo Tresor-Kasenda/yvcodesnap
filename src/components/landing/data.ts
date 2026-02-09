@@ -6,6 +6,7 @@ export type Testimonial = {
   role: string;
   image: string;
   quote: string;
+  initials?: string;
 };
 
 export type PricingPlan = {
@@ -19,13 +20,13 @@ export type PricingPlan = {
 };
 
 export const users = [
-  { name: 'Alex', avatar: 'https://i.pravatar.cc/150?img=1' },
-  { name: 'Sarah', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { name: 'Marcus', avatar: 'https://i.pravatar.cc/150?img=8' },
-  { name: 'Elena', avatar: 'https://i.pravatar.cc/150?img=9' },
-  { name: 'James', avatar: 'https://i.pravatar.cc/150?img=12' },
-  { name: 'Priya', avatar: 'https://i.pravatar.cc/150?img=16' },
-  { name: 'David', avatar: 'https://i.pravatar.cc/150?img=11' },
+  { name: 'Alex', avatar: 'https://i.pravatar.cc/150?img=1', initials: 'AX' },
+  { name: 'Sarah', avatar: 'https://i.pravatar.cc/150?img=5', initials: 'SA' },
+  { name: 'Marcus', avatar: 'https://i.pravatar.cc/150?img=8', initials: 'MA' },
+  { name: 'Elena', avatar: 'https://i.pravatar.cc/150?img=9', initials: 'EL' },
+  { name: 'James', avatar: 'https://i.pravatar.cc/150?img=12', initials: 'JA' },
+  { name: 'Priya', avatar: 'https://i.pravatar.cc/150?img=16', initials: 'PR' },
+  { name: 'David', avatar: 'https://i.pravatar.cc/150?img=11', initials: 'DA' },
 ];
 
 export const trustedBy = trustedCompanies;
@@ -99,72 +100,84 @@ export const testimonials: Testimonial[] = [
     role: 'Content Creator',
     image: 'https://randomuser.me/api/portraits/men/1.jpg',
     quote: 'I publish content much faster now. The workflow is simple and the output looks premium.',
+    initials: 'JY',
   },
   {
     name: 'Yves Kalume',
     role: 'Growth Marketer',
     image: 'https://randomuser.me/api/portraits/men/6.jpg',
     quote: 'Even without design skills, I can create high-quality visuals that feel professionally crafted.',
+    initials: 'YK',
   },
   {
     name: 'Yucel Faruksahan',
     role: 'Founder',
     image: 'https://randomuser.me/api/portraits/men/7.jpg',
     quote: 'One of the cleanest tools to present ideas online. Great balance between speed and control.',
+    initials: 'YF',
   },
   {
     name: 'Shekinah Tshiokufila',
     role: 'Product Manager',
     image: 'https://randomuser.me/api/portraits/men/4.jpg',
     quote: 'It helps me keep visual quality high while spending less time polishing screenshots.',
+    initials: 'ST',
   },
   {
     name: 'Oketa Fred',
     role: 'Freelance Consultant',
     image: 'https://randomuser.me/api/portraits/men/2.jpg',
     quote: 'The components and presets are practical. I went from idea to publishable image in minutes.',
+    initials: 'OF',
   },
   {
     name: 'Zeki',
     role: 'Startup Founder',
     image: 'https://randomuser.me/api/portraits/men/5.jpg',
     quote: 'Fast setup, strong customization, and better-looking posts. It has become part of our content stack.',
+    initials: 'ZK',
   },
   {
     name: 'Joseph Kitheka',
     role: 'Marketing Lead',
     image: 'https://randomuser.me/api/portraits/men/9.jpg',
     quote: 'It reduced my production time a lot. I can keep publishing without compromising quality.',
+    initials: 'JK',
   },
   {
     name: 'Khatab Wedaa',
     role: 'Design Systems Lead',
     image: 'https://randomuser.me/api/portraits/men/10.jpg',
     quote: 'Elegant and responsive. A strong base if you want to launch polished visuals quickly.',
+    initials: 'KW',
   },
   {
     name: 'Rodrigo Aguilar',
     role: 'Community Manager',
     image: 'https://randomuser.me/api/portraits/men/11.jpg',
     quote: 'Simple, structured, and beautiful. It makes a good-looking result the default outcome.',
+    initials: 'RA',
   },
   {
     name: 'Eric Ampire',
     role: 'Training Consultant',
     image: 'https://randomuser.me/api/portraits/men/12.jpg',
     quote: 'A practical way to create strong visuals without investing hours in design tools.',
+    initials: 'EA',
   },
   {
     name: 'Roland Tubonge',
     role: 'Operations Manager',
     image: 'https://randomuser.me/api/portraits/men/13.jpg',
     quote: 'The learning curve is near zero. You can ship impressive visuals from day one.',
+    initials: 'RT',
   },
   {
     name: 'Anonymous Author',
     role: 'Course Creator',
     image: 'https://randomuser.me/api/portraits/men/8.jpg',
     quote: 'I needed a way to publish clear training visuals quickly. This solved that problem immediately.',
+    initials: 'AA',
   },
 ];
 

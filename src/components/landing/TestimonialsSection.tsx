@@ -1,8 +1,19 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animationVariants';
 import { testimonials, type Testimonial } from './data';
+import { Avatar } from '../ui/Avatar';
 
 const chunkArray = (array: Testimonial[], chunkSize: number): Testimonial[][] => {
+  // Handle edge cases
+  if (!array || array.length === 0) {
+    return [];
+  }
+
+  if (chunkSize <= 0) {
+    return [array];
+  }
+
   const result: Testimonial[][] = [];
   for (let i = 0; i < array.length; i += chunkSize) {
     result.push(array.slice(i, i + chunkSize));
@@ -12,15 +23,7 @@ const chunkArray = (array: Testimonial[], chunkSize: number): Testimonial[][] =>
 
 const testimonialChunks = chunkArray(testimonials, Math.ceil(testimonials.length / 3));
 
-const getInitials = (name: string) =>
-  name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
-export function TestimonialsSection() {
+function TestimonialsSectionComponent() {
   return (
     <motion.section
       id="testimonials"
@@ -52,29 +55,19 @@ export function TestimonialsSection() {
               key={chunkIndex}
               className="space-y-3"
             >
-              {chunk.map(({ name, role, quote, image }, index) => (
+              {chunk.map(({ name, role, quote, image, initials }) => (
                 <motion.div
-                  key={`${chunkIndex}-${index}-${name}`}
+                  key={`testimonial-${name.replace(/\s+/g, '-').toLowerCase()}`}
                   className="rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-sm transition-colors dark:border-white/10 dark:bg-white/5"
                   variants={fadeInUp}
                 >
                   <div className="grid grid-cols-[auto_1fr] gap-3">
-                    <div className="relative h-9 w-9 overflow-hidden rounded-full bg-neutral-200 text-xs font-semibold text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        {getInitials(name)}
-                      </span>
-                      <img
-                        alt={name}
-                        src={image}
-                        loading="lazy"
-                        width={120}
-                        height={120}
-                        className="relative h-full w-full rounded-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
+                    <Avatar
+                      src={image}
+                      alt={`${name}'s profile picture`}
+                      initials={initials}
+                      size="md"
+                    />
 
                     <div>
                       <h3 className="font-medium text-neutral-900 dark:text-white">{name}</h3>
@@ -93,3 +86,5 @@ export function TestimonialsSection() {
     </motion.section>
   );
 }
+
+export const TestimonialsSection = memo(TestimonialsSectionComponent);

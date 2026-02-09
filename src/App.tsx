@@ -4,12 +4,17 @@ import AppRouter from './app/router/AppRouter';
 import { useAuthStore } from './store/authStore';
 import { useSyncStore } from './store/syncStore';
 import { useRecentSnapsStore } from './store/recentSnapsStore';
+import { useAuthCleanup } from './hooks/useAuthCleanup';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   const { initialize, loading, user } = useAuthStore();
   const { migrateLocalSnaps, cloudSnaps } = useSyncStore();
   const { recentSnaps } = useRecentSnapsStore();
   const [migrationDone, setMigrationDone] = useState(false);
+
+  // Cleanup auth subscription on unmount
+  useAuthCleanup();
 
   // Initialize auth on app load
   useEffect(() => {
@@ -41,9 +46,11 @@ function App() {
   }
 
   return (
-    <AppProviders>
-      <AppRouter />
-    </AppProviders>
+    <ErrorBoundary>
+      <AppProviders>
+        <AppRouter />
+      </AppProviders>
+    </ErrorBoundary>
   );
 }
 

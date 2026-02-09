@@ -1,19 +1,22 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { OnboardingPreferences, User, Subscription } from '../types';
+import type { OnboardingPreferences, User, UserProfile, Subscription } from '../types';
 import type { Session } from '@supabase/supabase-js';
+import { getOAuthRedirectUrl } from '../config/auth';
 
 let authChangeSubscription: { unsubscribe: () => void } | null = null;
 
 export interface AuthState {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
   hasCompletedOnboarding: boolean;
   subscription: Subscription;
 
   // Actions
   initialize: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error?: string }>;
@@ -21,24 +24,48 @@ export interface AuthState {
   completeOnboarding: (preferences: OnboardingPreferences) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   fetchSubscription: () => Promise<void>;
+  cleanup: () => void;
 }
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Unexpected authentication error';
 
-const getOnboardingStatus = (user: User | null | undefined) =>
+const getMetadataOnboardingStatus = (user: User | null | undefined) =>
   user?.user_metadata?.onboarding_completed === true;
+
+const getOnboardingStatus = (profile: UserProfile | null, user: User | null | undefined) =>
+  profile?.onboarding_completed ?? getMetadataOnboardingStatus(user);
+
+const withOnboardingMetadata = (user: User, preferences: OnboardingPreferences, completedAt: string): User => ({
+  ...user,
+  user_metadata: {
+    ...(user.user_metadata ?? {}),
+    full_name: preferences.fullName,
+    onboarding_completed: true,
+    onboarding_completed_at: completedAt,
+    onboarding_preferences: {
+      fullName: preferences.fullName,
+      useCase: preferences.useCase,
+      experienceLevel: preferences.experienceLevel,
+      primaryFormat: preferences.primaryFormat,
+      planIntent: preferences.planIntent,
+    },
+  },
+});
+
+const FREE_SUBSCRIPTION: Subscription = {
+  tier: 'free',
+  snap_limit: 2,
+  current_snap_count: 0,
+};
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   session: null,
+  profile: null,
   loading: true,
   hasCompletedOnboarding: false,
-  subscription: {
-    tier: 'free',
-    snap_limit: 2,
-    current_snap_count: 0,
-  },
+  subscription: FREE_SUBSCRIPTION,
 
   initialize: async () => {
     try {
@@ -50,12 +77,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         set({
           user: nextUser,
           session,
+          profile: null,
           loading: false,
-          hasCompletedOnboarding: getOnboardingStatus(nextUser),
+          hasCompletedOnboarding: getMetadataOnboardingStatus(nextUser),
         });
+        await get().fetchProfile();
         await get().fetchSubscription();
       } else {
-        set({ loading: false, hasCompletedOnboarding: false });
+        set({
+          loading: false,
+          profile: null,
+          hasCompletedOnboarding: false,
+          subscription: FREE_SUBSCRIPTION,
+        });
       }
 
       // Listen to auth changes
@@ -65,10 +99,18 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           set({
             user: nextUser,
             session: nextSession,
-            hasCompletedOnboarding: getOnboardingStatus(nextUser),
+            profile: null,
+            hasCompletedOnboarding: getMetadataOnboardingStatus(nextUser),
           });
           if (nextSession) {
+            await get().fetchProfile();
             await get().fetchSubscription();
+          } else {
+            set({
+              profile: null,
+              hasCompletedOnboarding: false,
+              subscription: FREE_SUBSCRIPTION,
+            });
           }
         });
         authChangeSubscription = data.subscription;
@@ -79,13 +121,52 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
+  fetchProfile: async () => {
+    const { user } = get();
+    if (!user) {
+      set({ profile: null, hasCompletedOnboarding: false });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          console.error('Failed to fetch profile:', error);
+        }
+        set({
+          profile: null,
+          hasCompletedOnboarding: getMetadataOnboardingStatus(user),
+        });
+        return;
+      }
+
+      const nextProfile = (data as UserProfile | null) ?? null;
+      set({
+        profile: nextProfile,
+        hasCompletedOnboarding: getOnboardingStatus(nextProfile, user),
+      });
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      set({
+        profile: null,
+        hasCompletedOnboarding: getMetadataOnboardingStatus(user),
+      });
+    }
+  },
+
   signUp: async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/editor`,
+          emailRedirectTo: getOAuthRedirectUrl('/editor'),
         },
       });
 
@@ -96,7 +177,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         set({
           user: nextUser,
           session: data.session,
-          hasCompletedOnboarding: getOnboardingStatus(nextUser),
+          profile: null,
+          hasCompletedOnboarding: getMetadataOnboardingStatus(nextUser),
         });
       }
       return {};
@@ -117,7 +199,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({
         user: nextUser,
         session: data.session,
-        hasCompletedOnboarding: getOnboardingStatus(nextUser),
+        profile: null,
+        hasCompletedOnboarding: getMetadataOnboardingStatus(nextUser),
       });
       return {};
     } catch (error: unknown) {
@@ -130,7 +213,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/editor`,
+          redirectTo: getOAuthRedirectUrl('/editor'),
         },
       });
 
@@ -147,7 +230,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   requestPasswordReset: async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: getOAuthRedirectUrl('/login'),
       });
 
       if (error) return { error: error.message };
@@ -163,35 +246,54 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return { error: 'Not authenticated' };
     }
 
+    const fullName = preferences.fullName.trim();
+    if (fullName.length < 2) {
+      return { error: 'Please provide a valid name.' };
+    }
+
     const completedAt = new Date().toISOString();
 
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        data: {
-          onboarding_completed: true,
-          onboarding_completed_at: completedAt,
-          onboarding_preferences: preferences,
-        },
-      });
+      const profilePayload = {
+        id: currentUser.id,
+        full_name: fullName,
+        onboarding_completed: true,
+        onboarding_completed_at: completedAt,
+        onboarding_use_case: preferences.useCase,
+        onboarding_experience_level: preferences.experienceLevel,
+        onboarding_primary_format: preferences.primaryFormat,
+        onboarding_plan_intent: preferences.planIntent,
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'id' })
+        .select('*')
+        .single();
 
       if (error) {
         return { error: error.message };
       }
 
-      const updatedUser = ((data.user as User | null) ?? {
-        ...currentUser,
-        user_metadata: {
-          ...(currentUser.user_metadata ?? {}),
-          onboarding_completed: true,
-          onboarding_completed_at: completedAt,
-          onboarding_preferences: preferences,
-        },
-      }) as User;
+      const normalizedPreferences: OnboardingPreferences = {
+        ...preferences,
+        fullName,
+      };
+      const updatedUser = withOnboardingMetadata(currentUser, normalizedPreferences, completedAt);
 
       set({
         user: updatedUser,
+        profile: data as UserProfile,
         hasCompletedOnboarding: true,
       });
+
+      // Keep auth metadata in sync so OAuth providers can expose the user's display name.
+      const { error: userMetadataError } = await supabase.auth.updateUser({
+        data: updatedUser.user_metadata,
+      });
+      if (userMetadataError) {
+        console.warn('Could not sync onboarding metadata to auth.user_metadata:', userMetadataError.message);
+      }
 
       return {};
     } catch (error: unknown) {
@@ -201,11 +303,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, session: null, hasCompletedOnboarding: false });
+    set({
+      user: null,
+      session: null,
+      profile: null,
+      hasCompletedOnboarding: false,
+      subscription: FREE_SUBSCRIPTION,
+    });
   },
 
   fetchSubscription: async () => {
-    const { user } = get();
+    const { user, profile } = get();
     if (!user) return;
 
     try {
@@ -215,17 +323,24 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-      // TODO: Fetch actual subscription tier from profiles table or Stripe
-      // For now, hardcode free tier
+      const tier = profile?.subscription_tier ?? 'free';
       set({
         subscription: {
-          tier: 'free',
-          snap_limit: 2,
+          tier,
+          snap_limit: tier === 'pro' ? -1 : 2,
           current_snap_count: count ?? 0,
         },
       });
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
+      set({ subscription: FREE_SUBSCRIPTION });
+    }
+  },
+
+  cleanup: () => {
+    if (authChangeSubscription) {
+      authChangeSubscription.unsubscribe();
+      authChangeSubscription = null;
     }
   },
 }));

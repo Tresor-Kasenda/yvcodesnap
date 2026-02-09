@@ -7,16 +7,21 @@ import { authCommonCopy, authPageCopy } from '../../content/auth';
 import { AuthFeedback, AuthSocialActions, AuthTextField } from '../../components/auth';
 import { authPrimaryButtonClass, authSecondaryLinkClass } from './styles';
 import AuthLayout from './AuthLayout';
+import { useAriaAnnounce } from '../../hooks/useAriaAnnounce';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signInWithOAuth, hasCompletedOnboarding } = useAuthStore();
+  const { signIn, signInWithOAuth } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // Announce errors and messages to screen readers
+  useAriaAnnounce(error, 'assertive');
+  useAriaAnnounce(message, 'polite');
 
   const clearFeedback = useCallback(() => {
     setError('');
@@ -35,13 +40,16 @@ export default function LoginPage() {
           return;
         }
 
-        const nextPath = hasCompletedOnboarding ? '/editor' : '/onboarding';
+        // Wait for auth state to update before reading fresh state
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const { hasCompletedOnboarding: fresh } = useAuthStore.getState();
+        const nextPath = fresh ? '/editor' : '/onboarding';
         navigate(nextPath);
       } finally {
         setLoading(false);
       }
     },
-    [clearFeedback, email, password, signIn, navigate, hasCompletedOnboarding]
+    [clearFeedback, email, password, signIn, navigate]
   );
 
   const handleOAuth = useCallback(

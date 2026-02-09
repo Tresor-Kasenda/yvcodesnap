@@ -1,9 +1,31 @@
+import { memo } from 'react';
 import { Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animationVariants';
+import { ANIMATION_CONSTANTS, getStaggerDelay } from '../../utils/animationConstants';
 import { howItWorks } from './data';
 
-export function HowItWorksSection() {
+// Type-safe color mapping
+type AllowedColor = 'blue' | 'purple' | 'emerald';
+
+const COLOR_CLASSES: Record<AllowedColor, string> = {
+  blue: 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20',
+  purple: 'bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-500/20',
+  emerald: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
+};
+
+// Extract animation configs to module level (prevent recreation on each render)
+const iconHoverAnimation = {
+  scale: 1.1,
+  rotate: [0, -10, 10, 0],
+};
+
+const iconTransition = {
+  rotate: { duration: 0.5 },
+  scale: { duration: 0.2 },
+};
+
+function HowItWorksSectionComponent() {
   return (
     <motion.section
       id="how-it-works"
@@ -51,11 +73,9 @@ export function HowItWorksSection() {
 
           {howItWorks.map((item, index) => {
             const Icon = item.icon;
-            const colorClasses = {
-              blue: 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20',
-              purple: 'bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-500/20',
-              emerald: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
-            };
+            const itemColor = item.color as AllowedColor;
+            const colorClass = COLOR_CLASSES[itemColor] || COLOR_CLASSES.blue;
+
             return (
               <motion.div
                 key={item.title}
@@ -64,25 +84,19 @@ export function HowItWorksSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{
-                  duration: 0.6,
-                  delay: index * 0.2,
-                  ease: [0.22, 1, 0.36, 1],
+                  duration: ANIMATION_CONSTANTS.DURATION_SLOW,
+                  delay: getStaggerDelay(index),
+                  ease: ANIMATION_CONSTANTS.EASE_SMOOTH,
                 }}
               >
                 <div className="inline-flex flex-col items-center">
                   <motion.div
                     className="relative mb-6"
-                    whileHover={{
-                      scale: 1.1,
-                      rotate: [0, -10, 10, 0],
-                    }}
-                    transition={{
-                      rotate: { duration: 0.5 },
-                      scale: { duration: 0.2 },
-                    }}
+                    whileHover={iconHoverAnimation}
+                    transition={iconTransition}
                   >
-                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 ${colorClasses[item.color as keyof typeof colorClasses]}`}>
-                      <Icon className="w-9 h-9" />
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 ${colorClass}`}>
+                      <Icon className={ANIMATION_CONSTANTS.ICON_XL} />
                     </div>
                     <motion.div
                       className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-sm font-bold"
@@ -90,9 +104,9 @@ export function HowItWorksSection() {
                       whileInView={{ scale: 1 }}
                       viewport={{ once: true }}
                       transition={{
-                        duration: 0.4,
-                        delay: index * 0.2 + 0.3,
-                        ease: [0.34, 1.56, 0.64, 1],
+                        duration: ANIMATION_CONSTANTS.DURATION_NORMAL,
+                        delay: Math.min(index * 0.1, ANIMATION_CONSTANTS.STAGGER_DELAY_MAX),
+                        ease: ANIMATION_CONSTANTS.EASE_ELASTIC,
                       }}
                     >
                       {item.step}
@@ -109,3 +123,5 @@ export function HowItWorksSection() {
     </motion.section>
   );
 }
+
+export const HowItWorksSection = memo(HowItWorksSectionComponent);

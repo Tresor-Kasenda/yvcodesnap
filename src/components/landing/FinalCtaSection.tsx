@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ArrowRight, Crown, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../../utils/animationVariants';
@@ -7,7 +8,7 @@ type FinalCtaSectionProps = {
   onViewPricing: () => void;
 };
 
-export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps) {
+function FinalCtaSectionComponent({ onStart, onViewPricing }: FinalCtaSectionProps) {
   return (
     <motion.section
       className="relative py-32 px-6"
@@ -34,11 +35,13 @@ export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps
         >
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
           <motion.div
-            className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full"
-            animate={{
+            className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full pointer-events-none"
+            initial={{ scale: 1, opacity: 0.3 }}
+            whileInView={{
               scale: [1, 1.2, 1],
               opacity: [0.3, 0.5, 0.3],
             }}
+            viewport={{ once: false }}
             transition={{
               duration: 8,
               repeat: Infinity,
@@ -64,6 +67,7 @@ export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps
               variants={fadeInUp}
             >
               <motion.button
+                type="button"
                 onClick={onStart}
                 className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-white hover:bg-neutral-100 text-neutral-900 rounded-2xl font-semibold text-lg transition-all"
                 whileHover={{
@@ -87,6 +91,7 @@ export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps
                 </motion.span>
               </motion.button>
               <motion.button
+                type="button"
                 onClick={onViewPricing}
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold text-lg border border-white/20 transition-all"
                 whileHover={{ scale: 1.03 }}
@@ -102,3 +107,5 @@ export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps
     </motion.section>
   );
 }
+
+export const FinalCtaSection = memo(FinalCtaSectionComponent);
