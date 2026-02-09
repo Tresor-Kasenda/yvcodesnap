@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Zap, Check, Play } from 'lucide-react';
+import { Zap, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LandingLayout() {
@@ -8,6 +9,19 @@ export default function LandingLayout() {
   const handleNewSnap = () => {
     navigate('/auth/login');
   };
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    html.classList.add('landing-scrollbar');
+    body.classList.add('landing-scrollbar');
+
+    return () => {
+      html.classList.remove('landing-scrollbar');
+      body.classList.remove('landing-scrollbar');
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#09090b] text-neutral-900 dark:text-white selection:bg-blue-500/30 relative overflow-x-hidden">
