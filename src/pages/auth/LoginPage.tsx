@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
@@ -10,7 +10,7 @@ import AuthLayout from './AuthLayout';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signInWithOAuth } = useAuthStore();
+  const { signIn, signInWithOAuth, hasCompletedOnboarding } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,45 +18,50 @@ export default function LoginPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const clearFeedback = () => {
+  const clearFeedback = useCallback(() => {
     setError('');
     setMessage('');
-  };
+  }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    clearFeedback();
-    setLoading(true);
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      clearFeedback();
+      setLoading(true);
+      try {
+        const result = await signIn(email, password);
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
 
-    const result = await signIn(email, password);
-    if (result.error) {
-      setError(result.error);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(false);
-    const nextPath = useAuthStore.getState().hasCompletedOnboarding ? '/editor' : '/onboarding';
-    navigate(nextPath);
-  };
-
-  const handleOAuth = async (provider: 'google' | 'github') => {
-    clearFeedback();
-    setLoading(true);
-    try {
-      const result = await signInWithOAuth(provider);
-      if (result.error) {
-        setError(result.error);
+        const nextPath = hasCompletedOnboarding ? '/editor' : '/onboarding';
+        navigate(nextPath);
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [clearFeedback, email, password, signIn, navigate, hasCompletedOnboarding]
+  );
+
+  const handleOAuth = useCallback(
+    async (provider: 'google' | 'github') => {
+      clearFeedback();
+      setLoading(true);
+      try {
+        const result = await signInWithOAuth(provider);
+        if (result.error) {
+          setError(result.error);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [clearFeedback, signInWithOAuth]
+  );
 
   return (
     <AuthLayout
-      title={authPageCopy.login.title}
-      subtitle={authPageCopy.login.subtitle}
       footer={
         <>
           <p>

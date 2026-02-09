@@ -2,16 +2,13 @@ import { useEffect, type ReactNode } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { productBrand } from '../../content/product';
 
 interface AuthLayoutProps {
-  title: string;
-  subtitle: string;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+export default function AuthLayout({ children, footer }: AuthLayoutProps) {
   const { user, hasCompletedOnboarding } = useAuthStore();
 
   useEffect(() => {
@@ -41,23 +38,14 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[760px] h-[420px] bg-blue-500/15 blur-[140px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[520px] h-[360px] bg-violet-500/12 blur-[130px] rounded-full pointer-events-none" />
 
-      <div className="relative max-w-xl mx-auto h-full flex items-center">
-        <section className="w-full rounded-3xl border border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-xl p-6 sm:p-8">
+      <div className="relative max-w-lg mx-auto h-full flex items-center">
+        <section className="w-full rounded-xl border border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-xl p-6 sm:p-8">
           <div className="space-y-6">
-            <Link to="/" className="inline-flex items-center gap-3 group">
-              <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </span>
-              <span className="leading-tight">
-                <span className="block font-bold text-lg tracking-tight text-neutral-900 dark:text-white">{productBrand.name}</span>
-                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{productBrand.platformTagline}</span>
+            <Link to="/" className="flex items-center justify-center gap-3 group">
+              <span className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
+                <Zap className="w-7 h-7 text-white" />
               </span>
             </Link>
-
-            <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">{title}</h1>
-              <p className="text-xs sm:text-base text-neutral-600 dark:text-neutral-400">{subtitle}</p>
-            </div>
 
             <div className="space-y-4">{children}</div>
 

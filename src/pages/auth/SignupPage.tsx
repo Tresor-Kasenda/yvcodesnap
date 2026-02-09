@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
@@ -10,7 +10,7 @@ import AuthLayout from './AuthLayout';
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { signUp, signInWithOAuth, signInWithMagicLink } = useAuthStore();
+  const { signUp, signInWithOAuth } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,59 +18,53 @@ export default function SignupPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const clearFeedback = () => {
+  const clearFeedback = useCallback(() => {
     setError('');
     setMessage('');
-  };
+  }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    clearFeedback();
-    setLoading(true);
-
-    const result = await signUp(email, password);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      const { user, hasCompletedOnboarding } = useAuthStore.getState();
-      if (user) {
-        navigate(hasCompletedOnboarding ? '/editor' : '/onboarding');
-      } else {
-        setMessage(authCommonCopy.signupSuccess);
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      clearFeedback();
+      setLoading(true);
+      try {
+        const result = await signUp(email, password);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          const { user, hasCompletedOnboarding } = useAuthStore.getState();
+          if (user) {
+            navigate(hasCompletedOnboarding ? '/editor' : '/onboarding');
+          } else {
+            setMessage(authCommonCopy.signupSuccess);
+          }
+        }
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
-  };
+    },
+    [clearFeedback, email, password, signUp, navigate]
+  );
 
-  const handleMagicLink = async () => {
-    clearFeedback();
-    setLoading(true);
-    const result = await signInWithMagicLink(email);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setMessage(authCommonCopy.magicLinkSuccess);
-    }
-    setLoading(false);
-  };
-
-  const handleOAuth = async (provider: 'google' | 'github') => {
-    clearFeedback();
-    setLoading(true);
-    try {
-      const result = await signInWithOAuth(provider);
-      if (result.error) {
-        setError(result.error);
+  const handleOAuth = useCallback(
+    async (provider: 'google' | 'github') => {
+      clearFeedback();
+      setLoading(true);
+      try {
+        const result = await signInWithOAuth(provider);
+        if (result.error) {
+          setError(result.error);
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [clearFeedback, signInWithOAuth]
+  );
 
   return (
     <AuthLayout
-      title={authPageCopy.signup.title}
-      subtitle={authPageCopy.signup.subtitle}
       footer={
         <p>
           {authPageCopy.signup.helperPrimary}{' '}
@@ -126,9 +120,7 @@ export default function SignupPage() {
 
       <AuthSocialActions
         loading={loading}
-        email={email}
         onOAuth={handleOAuth}
-        onMagicLink={handleMagicLink}
       />
     </AuthLayout>
   );

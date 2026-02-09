@@ -186,8 +186,8 @@ export const pricingPlans: PricingPlan[] = [
   },
   {
     name: 'Pro',
-    monthlyPrice: 12,
-    yearlyPrice: 120,
+    monthlyPrice: 8,
+    yearlyPrice: 80,
     description: 'Built for creators and teams publishing every week',
     features: [
       'Everything in Free',

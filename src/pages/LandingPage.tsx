@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HeroSection,
@@ -17,13 +17,17 @@ export default function LandingPage() {
   const pricingRef = useRef<HTMLDivElement>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     navigate('/login');
-  };
+  }, [navigate]);
 
-  const scrollToPricing = () => {
+  const scrollToPricing = useCallback(() => {
     pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
+
+  const handleBillingCycleChange = useCallback((cycle: BillingCycle) => {
+    setBillingCycle(cycle);
+  }, []);
 
   return (
     <>
@@ -35,7 +39,7 @@ export default function LandingPage() {
       <PricingSection
         pricingRef={pricingRef}
         billingCycle={billingCycle}
-        onBillingCycleChange={setBillingCycle}
+        onBillingCycleChange={handleBillingCycleChange}
         onStart={handleStart}
       />
       <FaqSection />

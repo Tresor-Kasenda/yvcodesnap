@@ -14,6 +14,9 @@ type PricingSectionProps = {
 };
 
 export function PricingSection({ pricingRef, billingCycle, onBillingCycleChange, onStart }: PricingSectionProps) {
+  const formatPrice = (value: number) => {
+    return Number.isInteger(value) ? `${value}` : value.toFixed(2);
+  };
   return (
     <motion.section
       ref={pricingRef}
@@ -127,7 +130,7 @@ export function PricingSection({ pricingRef, billingCycle, onBillingCycleChange,
                 </div>
                 {plan.monthlyPrice !== 0 && billingCycle === 'yearly' && (
                   <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                    Equivalent to $10/month, billed annually
+                    {`Equivalent to $${formatPrice(plan.yearlyPrice / 12)}/month, billed annually`}
                   </p>
                 )}
               </div>
