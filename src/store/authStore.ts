@@ -302,14 +302,38 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
-    set({
-      user: null,
-      session: null,
-      profile: null,
-      hasCompletedOnboarding: false,
-      subscription: FREE_SUBSCRIPTION,
-    });
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase sign out error:', error);
+        throw new Error(error.message);
+      }
+
+      // Clear local auth state
+      set({
+        user: null,
+        session: null,
+        profile: null,
+        hasCompletedOnboarding: false,
+        subscription: FREE_SUBSCRIPTION,
+      });
+
+      // Cleanup auth subscription if exists
+      const cleanup = get().cleanup;
+      cleanup();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      // Still clear local state even if Supabase sign out fails
+      set({
+        user: null,
+        session: null,
+        profile: null,
+        hasCompletedOnboarding: false,
+        subscription: FREE_SUBSCRIPTION,
+      });
+      throw error;
+    }
   },
 
   fetchSubscription: async () => {

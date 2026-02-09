@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { User, LogOut, Crown } from 'lucide-react';
 import UpgradeModal from '../UpgradeModal';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function UserMenu() {
   const navigate = useNavigate();
@@ -26,9 +27,15 @@ export default function UserMenu() {
   }, [isOpen]);
 
   const handleSignOut = async () => {
-    await signOut();
-    setIsOpen(false);
-    navigate('/login', { replace: true });
+    try {
+      await signOut();
+      setIsOpen(false);
+      toast.success('Signed out successfully');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
   };
 
   if (!user) return null;
