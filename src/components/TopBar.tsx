@@ -23,6 +23,81 @@ interface TopBarProps {
   showInspector?: boolean;
 }
 
+const FREE_PLAN_WATERMARK_TEXT = 'Made with YvCode';
+
+const loadImageFromDataUrl = (dataUrl: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Unable to load export image for watermarking.'));
+    image.src = dataUrl;
+  });
+
+const drawRoundedRect = (
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) => {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.lineTo(x + width - safeRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  context.lineTo(x + width, y + height - safeRadius);
+  context.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+  context.lineTo(x + safeRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  context.lineTo(x, y + safeRadius);
+  context.quadraticCurveTo(x, y, x + safeRadius, y);
+  context.closePath();
+};
+
+const applyFreePlanWatermark = async (dataUrl: string, format: 'png' | 'jpeg'): Promise<string> => {
+  const image = await loadImageFromDataUrl(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return dataUrl;
+  }
+
+  context.drawImage(image, 0, 0);
+
+  const shortestSide = Math.max(1, Math.min(canvas.width, canvas.height));
+  const fontSize = Math.max(14, Math.round(shortestSide * 0.024));
+  const horizontalPadding = Math.max(12, Math.round(fontSize * 0.9));
+  const verticalPadding = Math.max(8, Math.round(fontSize * 0.55));
+  const margin = Math.max(12, Math.round(shortestSide * 0.03));
+  const borderRadius = Math.max(8, Math.round(fontSize * 0.5));
+
+  context.font = `600 ${fontSize}px Inter, system-ui, -apple-system, sans-serif`;
+  const textWidth = context.measureText(FREE_PLAN_WATERMARK_TEXT).width;
+  const badgeWidth = Math.ceil(textWidth + horizontalPadding * 2);
+  const badgeHeight = Math.ceil(fontSize + verticalPadding * 2);
+  const x = canvas.width - badgeWidth - margin;
+  const y = canvas.height - badgeHeight - margin;
+
+  context.fillStyle = 'rgba(9, 9, 11, 0.68)';
+  drawRoundedRect(context, x, y, badgeWidth, badgeHeight, borderRadius);
+  context.fill();
+
+  context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  context.textAlign = 'left';
+  context.textBaseline = 'middle';
+  context.fillText(
+    FREE_PLAN_WATERMARK_TEXT,
+    x + horizontalPadding,
+    y + (badgeHeight / 2)
+  );
+
+  return canvas.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.95);
+};
+
 const TopBar: React.FC<TopBarProps> = ({
   stageRef,
   onGoHome,
@@ -50,7 +125,7 @@ const TopBar: React.FC<TopBarProps> = ({
   } = useCanvasStore();
 
   const { addRecentSnap } = useRecentSnapsStore();
-  const { user } = useAuthStore();
+  const { user, subscription } = useAuthStore();
   const { saveSnapToCloud } = useSyncStore();
 
   const aspectOptions = useMemo(() => {
@@ -112,7 +187,7 @@ const TopBar: React.FC<TopBarProps> = ({
     stage.scale({ x: scale, y: scale });
     stage.position({ x: 0, y: 0 });
 
-    const dataUrl = stage.toDataURL({
+    let dataUrl = stage.toDataURL({
       pixelRatio: 1,
       mimeType: format === 'png' ? 'image/png' : 'image/jpeg',
       quality: 0.95,
@@ -120,11 +195,19 @@ const TopBar: React.FC<TopBarProps> = ({
       height: snap.meta.height * scale,
     });
 
-    // Restore
+    // Restore immediately so the editor UI does not stay zoomed during async post-processing.
     stage.scale({ x: oldScale, y: oldScale });
     stage.position(oldPosition);
     if (transparent && bgLayer) {
       bgLayer.show();
+    }
+
+    if (user && subscription.tier === 'free') {
+      try {
+        dataUrl = await applyFreePlanWatermark(dataUrl, format);
+      } catch (error) {
+        console.error('Unable to apply free plan watermark:', error);
+      }
     }
 
     // Download
@@ -135,7 +218,7 @@ const TopBar: React.FC<TopBarProps> = ({
     setShowExportMenu(false);
     addRecentSnap(snap);
     toast.success(`Exported as ${format.toUpperCase()}`);
-  }, [stageRef, snap, addRecentSnap]);
+  }, [stageRef, snap, addRecentSnap, user, subscription.tier]);
 
   const handleExportJSON = useCallback(() => {
     try {
@@ -486,6 +569,14 @@ const TopBar: React.FC<TopBarProps> = ({
                 <div className="px-3 py-2 mt-2">
                   <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest pl-1">Download Image</span>
                 </div>
+
+                {user && subscription.tier === 'free' && (
+                  <div className="mx-3 mb-2 rounded-lg border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-500/10 px-3 py-2">
+                    <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                      Free plan exports include a watermark
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 gap-1.5 px-1">
 

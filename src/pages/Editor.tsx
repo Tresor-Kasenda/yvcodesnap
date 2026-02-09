@@ -64,11 +64,14 @@ export default function Editor() {
                 const parts = shortcut.split('+');
                 const key = parts[parts.length - 1].toLowerCase();
 
+                // Check if shortcut expects Cmd or Ctrl - support both for compatibility
                 const hasCmd = parts.includes('Cmd');
+                const hasCtrl = parts.includes('Ctrl');
                 const hasShift = parts.includes('Shift');
 
-                // Check modifiers
-                if (hasCmd !== isMeta) return false;
+                // Match modifier keys - handle both Mac (Cmd) and Windows (Ctrl)
+                const modifierMatch = hasCmd ? isMeta : hasCtrl ? (e.ctrlKey && !e.metaKey) : !isMeta && !e.ctrlKey;
+                if (!modifierMatch) return false;
                 if (hasShift !== isShift) return false;
 
                 // Check key
@@ -77,7 +80,7 @@ export default function Editor() {
                 // Handle symbols like +, -, =, '
                 if (key === '+' && (e.key === '+' || e.key === '=')) return true;
                 if (key === '-' && e.key === '-') return true;
-                if (key === '\'' && (e.key === '\'' || e.key === ';')) return true; // Mapping ; to ' for grid if needed or keep ; logic
+                if (key === '\'' && (e.key === '\'' || e.key === ';')) return true;
 
                 return false;
             };
