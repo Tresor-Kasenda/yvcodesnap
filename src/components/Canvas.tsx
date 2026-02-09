@@ -1139,6 +1139,50 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
     return null;
   }, [drawingShapeId, drawingArrowId, findElement]);
 
+  const selectedVectorGuide = useMemo(() => {
+    if (drawingShapeId || drawingArrowId) return null;
+    if (selectedElementIds.length !== 1) return null;
+    const selected = snap.elements.find((el) => el.id === selectedElementIds[0]);
+    if (!selected) return null;
+
+    let start: { x: number; y: number } | null = null;
+    let end: { x: number; y: number } | null = null;
+
+    if (selected.type === 'shape') {
+      const line = selected as ShapeElement;
+      if (line.props.kind === 'line' && line.points && line.points.length >= 2) {
+        start = line.points[0];
+        end = line.points[line.points.length - 1];
+      }
+    }
+
+    if (selected.type === 'arrow') {
+      const arrow = selected as ArrowElement;
+      if (arrow.points && arrow.points.length >= 2) {
+        start = arrow.points[0];
+        end = arrow.points[arrow.points.length - 1];
+      }
+    }
+
+    if (!start || !end) return null;
+
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 0.001) return null;
+
+    const center = {
+      x: (start.x + end.x) / 2,
+      y: (start.y + end.y) / 2,
+    };
+
+    return {
+      center,
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+      text: `${length.toFixed(2)} × 0`,
+    };
+  }, [selectedElementIds, snap.elements, drawingShapeId, drawingArrowId]);
+
   useEffect(() => {
     return () => {
       if (wheelRaf.current) cancelAnimationFrame(wheelRaf.current);
@@ -1370,19 +1414,72 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
             }
           })}
 
+          {/* Selected line/arrow guide (Figma-like) */}
+          {selectedVectorGuide && (
+            <Group listening={false}>
+              <Line
+                points={[selectedVectorGuide.center.x, 0, selectedVectorGuide.center.x, height]}
+                stroke="#1da1f2"
+                strokeWidth={1.5}
+                dash={[6, 6]}
+              />
+              <Line
+                points={[0, selectedVectorGuide.center.y, width, selectedVectorGuide.center.y]}
+                stroke="#1da1f2"
+                strokeWidth={1.5}
+                dash={[6, 6]}
+              />
+              {(() => {
+                const text = selectedVectorGuide.text;
+                const charWidth = 7;
+                const paddingH = 10;
+                const paddingV = 6;
+                const rectWidth = text.length * charWidth + paddingH * 2;
+                const rectHeight = 20 + paddingV * 2;
+                return (
+                  <Group
+                    x={selectedVectorGuide.center.x}
+                    y={selectedVectorGuide.center.y}
+                    offsetX={rectWidth / 2}
+                    offsetY={rectHeight / 2}
+                    rotation={selectedVectorGuide.angle}
+                  >
+                    <Rect
+                      width={rectWidth}
+                      height={rectHeight}
+                      fill="#1da1f2"
+                      cornerRadius={6}
+                      shadowColor="rgba(0,0,0,0.2)"
+                      shadowBlur={4}
+                      shadowOpacity={0.4}
+                    />
+                    <Text
+                      x={paddingH}
+                      y={paddingV}
+                      text={text}
+                      fontSize={14}
+                      fontStyle="bold"
+                      fill="#ffffff"
+                    />
+                  </Group>
+                );
+              })()}
+            </Group>
+          )}
+
           {/* Live drawing guides (dimensions + center axes) */}
           {drawingGuide && (
             <Group listening={false}>
               {drawingGuide.type === 'shape' && (
                 <>
                   <Line
-                    points={[drawingGuide.center.x, drawingGuide.bbox.y, drawingGuide.center.x, drawingGuide.bbox.y + drawingGuide.bbox.height]}
+                    points={[drawingGuide.center.x, 0, drawingGuide.center.x, height]}
                     stroke="#1da1f2"
                     strokeWidth={1.5}
                     dash={[6, 6]}
                   />
                   <Line
-                    points={[drawingGuide.bbox.x, drawingGuide.center.y, drawingGuide.bbox.x + drawingGuide.bbox.width, drawingGuide.center.y]}
+                    points={[0, drawingGuide.center.y, width, drawingGuide.center.y]}
                     stroke="#1da1f2"
                     strokeWidth={1.5}
                     dash={[6, 6]}
@@ -1394,10 +1491,13 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
                     const paddingV = 6;
                     const rectWidth = text.length * charWidth + paddingH * 2;
                     const rectHeight = 20 + paddingV * 2;
-                    const posX = drawingGuide.center.x - rectWidth / 2;
-                    const posY = drawingGuide.bbox.y + drawingGuide.bbox.height + 12;
                     return (
-                      <Group x={posX} y={posY}>
+                      <Group
+                        x={drawingGuide.center.x}
+                        y={drawingGuide.center.y}
+                        offsetX={rectWidth / 2}
+                        offsetY={rectHeight / 2}
+                      >
                         <Rect
                           width={rectWidth}
                           height={rectHeight}
@@ -1424,19 +1524,23 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
               {drawingGuide.type === 'line' && (
                 <>
                   <Line
-                    points={[drawingGuide.start.x, 0, drawingGuide.start.x, height]}
+                    points={[drawingGuide.center.x, 0, drawingGuide.center.x, height]}
                     stroke="#1da1f2"
                     strokeWidth={1.5}
                     dash={[6, 6]}
                   />
                   <Line
-                    points={[0, drawingGuide.start.y, width, drawingGuide.start.y]}
+                    points={[0, drawingGuide.center.y, width, drawingGuide.center.y]}
                     stroke="#1da1f2"
                     strokeWidth={1.5}
                     dash={[6, 6]}
                   />
                   {(() => {
-                    const text = `${(drawingGuide.bbox.width).toFixed(1)} × ${(drawingGuide.bbox.height).toFixed(1)}`;
+                    const length = Math.hypot(
+                      drawingGuide.end.x - drawingGuide.start.x,
+                      drawingGuide.end.y - drawingGuide.start.y
+                    );
+                    const text = `${length.toFixed(2)} × 0`;
                     const charWidth = 7;
                     const paddingH = 10;
                     const paddingV = 6;

@@ -22,7 +22,10 @@ const clampMin = (value: number, fallback: number, min: number) => {
 };
 
 const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
-  const { updateElement, saveToHistory } = useCanvasStore();
+  const updateElement = useCanvasStore((state) => state.updateElement);
+  const saveToHistory = useCanvasStore((state) => state.saveToHistory);
+  const arrowEndpointSelection = useCanvasStore((state) => state.arrowEndpointSelection);
+  const setArrowEndpointSelection = useCanvasStore((state) => state.setArrowEndpointSelection);
 
   const update = (updates: Partial<ArrowElement>) => {
     updateElement(element.id, updates);
@@ -34,71 +37,90 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
 
   const start = element.points[0];
   const end = element.points[element.points.length - 1];
+  const activeArrowEndpoint =
+    arrowEndpointSelection?.elementId === element.id ? arrowEndpointSelection.endpoint : 'end';
+  const activeArrowPoint = activeArrowEndpoint === 'start' ? start : end;
+  const fixedArrowPoint = activeArrowEndpoint === 'start' ? end : start;
 
-  const bounds = useMemo(() => ({
-    x: Math.min(start.x, end.x),
-    y: Math.min(start.y, end.y),
-    width: Math.abs(end.x - start.x),
-    height: Math.abs(end.y - start.y),
-  }), [start.x, start.y, end.x, end.y]);
+  const size = useMemo(
+    () => ({
+      width: Math.abs(end.x - start.x),
+      height: Math.abs(end.y - start.y),
+    }),
+    [start.x, start.y, end.x, end.y]
+  );
 
-  const shiftArrow = (dx: number, dy: number) => {
-    const nextPoints = element.points.map((point) => ({
-      x: point.x + dx,
-      y: point.y + dy,
-    }));
+  const rotation = useMemo(() => {
+    const dx = activeArrowPoint.x - fixedArrowPoint.x;
+    const dy = activeArrowPoint.y - fixedArrowPoint.y;
+    if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) return 0;
+    return (Math.atan2(dy, dx) * 180) / Math.PI;
+  }, [activeArrowPoint.x, activeArrowPoint.y, fixedArrowPoint.x, fixedArrowPoint.y]);
 
-    const nextControlPoints = element.props.controlPoints?.map((point) => ({
-      x: point.x + dx,
-      y: point.y + dy,
-    }));
-
-    update({
-      points: nextPoints,
-      props: nextControlPoints
-        ? { ...element.props, controlPoints: nextControlPoints }
-        : element.props,
-    });
+  const updateArrowPoints = (
+    nextStart: { x: number; y: number },
+    nextEnd: { x: number; y: number }
+  ) => {
+    const basePoints = element.points.length >= 2 ? [...element.points] : [nextStart, nextEnd];
+    basePoints[0] = nextStart;
+    basePoints[basePoints.length - 1] = nextEnd;
+    update({ points: basePoints });
   };
 
   const updateStart = (coord: 'x' | 'y', value: number) => {
     const safe = Number.isFinite(value) ? value : start[coord];
-    const delta = safe - start[coord];
-    shiftArrow(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
+    const nextStart = { ...start, [coord]: safe };
+    updateArrowPoints(nextStart, { ...end });
   };
 
   const updateEnd = (coord: 'x' | 'y', value: number) => {
     const safe = Number.isFinite(value) ? value : end[coord];
-    const nextPoints = [...element.points];
-    nextPoints[nextPoints.length - 1] = {
-      x: coord === 'x' ? safe : end.x,
-      y: coord === 'y' ? safe : end.y,
-    };
-    update({ points: nextPoints });
+    const nextEnd = { ...end, [coord]: safe };
+    updateArrowPoints({ ...start }, nextEnd);
   };
 
-  const updateBoundsPosition = (coord: 'x' | 'y', value: number) => {
-    const current = coord === 'x' ? bounds.x : bounds.y;
-    const safe = Number.isFinite(value) ? value : current;
-    const delta = safe - current;
-    shiftArrow(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
+  const updateFromActivePoint = (nextActive: { x: number; y: number }) => {
+    if (activeArrowEndpoint === 'start') {
+      updateArrowPoints(nextActive, { ...end });
+      return;
+    }
+    updateArrowPoints({ ...start }, nextActive);
+  };
+
+  const updateActiveCoord = (coord: 'x' | 'y', value: number) => {
+    const safe = Number.isFinite(value) ? value : activeArrowPoint[coord];
+    const nextActive = { ...activeArrowPoint, [coord]: safe };
+    updateFromActivePoint(nextActive);
   };
 
   const updateBoundsSize = (axis: 'width' | 'height', value: number) => {
-    const safe = clampMin(value, axis === 'width' ? bounds.width : bounds.height, 1);
-    const nextPoints = [...element.points];
-    const nextEnd = { ...end };
+    const safe = clampMin(value, axis === 'width' ? size.width : size.height, 0);
+    const nextActive = { ...activeArrowPoint };
 
     if (axis === 'width') {
-      const direction = end.x - start.x >= 0 ? 1 : -1;
-      nextEnd.x = start.x + direction * safe;
+      const direction = activeArrowPoint.x - fixedArrowPoint.x >= 0 ? 1 : -1;
+      nextActive.x = fixedArrowPoint.x + direction * safe;
     } else {
-      const direction = end.y - start.y >= 0 ? 1 : -1;
-      nextEnd.y = start.y + direction * safe;
+      const direction = activeArrowPoint.y - fixedArrowPoint.y >= 0 ? 1 : -1;
+      nextActive.y = fixedArrowPoint.y + direction * safe;
     }
 
-    nextPoints[nextPoints.length - 1] = nextEnd;
-    update({ points: nextPoints });
+    updateFromActivePoint(nextActive);
+  };
+
+  const updateArrowRotation = (nextRotation: number) => {
+    const safe = Number.isFinite(nextRotation) ? nextRotation : rotation;
+    const dx = activeArrowPoint.x - fixedArrowPoint.x;
+    const dy = activeArrowPoint.y - fixedArrowPoint.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 0.0001) return;
+
+    const radians = (safe * Math.PI) / 180;
+    const nextActive = {
+      x: fixedArrowPoint.x + Math.cos(radians) * length,
+      y: fixedArrowPoint.y + Math.sin(radians) * length,
+    };
+    updateFromActivePoint(nextActive);
   };
 
   const addControlPoint = () => {
@@ -127,6 +149,11 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
     updateProps({ controlPoints: [] });
   };
 
+  const displayX = activeArrowPoint.x;
+  const displayY = activeArrowPoint.y;
+  const displayWidth = size.width;
+  const displayHeight = size.height;
+
   return (
     <div className="space-y-4">
       <div>
@@ -136,8 +163,8 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <label className={LABEL_CLASS}>X</label>
             <input
               type="number"
-              value={Math.round(bounds.x)}
-              onChange={(e) => updateBoundsPosition('x', Number(e.target.value))}
+              value={Math.round(displayX)}
+              onChange={(e) => updateActiveCoord('x', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
             />
@@ -146,8 +173,8 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <label className={LABEL_CLASS}>Y</label>
             <input
               type="number"
-              value={Math.round(bounds.y)}
-              onChange={(e) => updateBoundsPosition('y', Number(e.target.value))}
+              value={Math.round(displayY)}
+              onChange={(e) => updateActiveCoord('y', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
             />
@@ -156,7 +183,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <label className={LABEL_CLASS}>W</label>
             <input
               type="number"
-              value={Math.round(bounds.width)}
+              value={Math.round(displayWidth)}
               onChange={(e) => updateBoundsSize('width', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
@@ -166,12 +193,30 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <label className={LABEL_CLASS}>H</label>
             <input
               type="number"
-              value={Math.round(bounds.height)}
+              value={Math.round(displayHeight)}
               onChange={(e) => updateBoundsSize('height', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
             />
           </div>
+        </div>
+      </div>
+
+      <div>
+        <label className={LABEL_CLASS}>Active Endpoint</label>
+        <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
+          <button
+            onClick={() => setArrowEndpointSelection(element.id, 'start')}
+            className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+          >
+            Start
+          </button>
+          <button
+            onClick={() => setArrowEndpointSelection(element.id, 'end')}
+            className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+          >
+            End
+          </button>
         </div>
       </div>
 
@@ -183,6 +228,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <input
               type="number"
               value={Math.round(start.x)}
+              onFocus={() => setArrowEndpointSelection(element.id, 'start')}
               onChange={(e) => updateStart('x', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
@@ -193,6 +239,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <input
               type="number"
               value={Math.round(start.y)}
+              onFocus={() => setArrowEndpointSelection(element.id, 'start')}
               onChange={(e) => updateStart('y', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
@@ -203,6 +250,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <input
               type="number"
               value={Math.round(end.x)}
+              onFocus={() => setArrowEndpointSelection(element.id, 'end')}
               onChange={(e) => updateEnd('x', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
@@ -213,12 +261,25 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             <input
               type="number"
               value={Math.round(end.y)}
+              onFocus={() => setArrowEndpointSelection(element.id, 'end')}
               onChange={(e) => updateEnd('y', Number(e.target.value))}
               onBlur={saveToHistory}
               className={INPUT_CLASS}
             />
           </div>
         </div>
+      </div>
+
+      <div>
+        <label className={LABEL_CLASS}>Rotation: {Math.round(rotation * 10) / 10}°</label>
+        <SliderField
+          min={-180}
+          max={180}
+          step={1}
+          value={rotation}
+          onValueChange={updateArrowRotation}
+          ariaLabel="Arrow rotation"
+        />
       </div>
 
       <div>
@@ -391,7 +452,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
 
       <div className="pt-2 border-t border-neutral-200 dark:border-white/5">
         <p className="text-[10px] text-neutral-500 dark:text-neutral-500">
-          Drag the white handles on the canvas to move arrow endpoints.
+          Drag the square handles on the canvas to move arrow endpoints.
         </p>
       </div>
     </div>

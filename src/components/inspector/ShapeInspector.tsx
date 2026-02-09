@@ -9,6 +9,9 @@ const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text
 const INPUT_CLASS =
   'w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none';
 const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-sm focus:outline-none font-mono';
+const SEGMENT_BUTTON_BASE = 'flex-1 py-2 rounded-md text-[10px] font-medium transition-all';
+const SEGMENT_BUTTON_ACTIVE = 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm';
+const SEGMENT_BUTTON_IDLE = 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5';
 
 const clampMin = (value: number, fallback: number, min: number) => {
   if (!Number.isFinite(value)) return fallback;
@@ -16,7 +19,10 @@ const clampMin = (value: number, fallback: number, min: number) => {
 };
 
 const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
-  const { updateElement, saveToHistory } = useCanvasStore();
+  const updateElement = useCanvasStore((state) => state.updateElement);
+  const saveToHistory = useCanvasStore((state) => state.saveToHistory);
+  const lineEndpointSelection = useCanvasStore((state) => state.lineEndpointSelection);
+  const setLineEndpointSelection = useCanvasStore((state) => state.setLineEndpointSelection);
   const { props, width, height } = element;
   const isLine = props.kind === 'line';
   const isPolygonLike = props.kind === 'polygon' || props.kind === 'star';
@@ -24,13 +30,25 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
 
   const lineStart = element.points?.[0] ?? { x: element.x, y: element.y };
   const lineEnd = element.points?.[element.points.length - 1] ?? { x: element.x, y: element.y };
+  const activeLineEndpoint =
+    lineEndpointSelection?.elementId === element.id ? lineEndpointSelection.endpoint : 'end';
+  const activeLinePoint = activeLineEndpoint === 'start' ? lineStart : lineEnd;
+  const fixedLinePoint = activeLineEndpoint === 'start' ? lineEnd : lineStart;
 
-  const lineBounds = useMemo(() => ({
-    x: Math.min(lineStart.x, lineEnd.x),
-    y: Math.min(lineStart.y, lineEnd.y),
-    width: Math.abs(lineEnd.x - lineStart.x),
-    height: Math.abs(lineEnd.y - lineStart.y),
-  }), [lineStart.x, lineStart.y, lineEnd.x, lineEnd.y]);
+  const lineSize = useMemo(
+    () => ({
+      width: Math.abs(lineEnd.x - lineStart.x),
+      height: Math.abs(lineEnd.y - lineStart.y),
+    }),
+    [lineStart.x, lineStart.y, lineEnd.x, lineEnd.y]
+  );
+
+  const lineRotation = useMemo(() => {
+    const dx = activeLinePoint.x - fixedLinePoint.x;
+    const dy = activeLinePoint.y - fixedLinePoint.y;
+    if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) return 0;
+    return (Math.atan2(dy, dx) * 180) / Math.PI;
+  }, [activeLinePoint.x, activeLinePoint.y, fixedLinePoint.x, fixedLinePoint.y]);
 
   const updateProps = (newProps: Partial<ShapeElement['props']>) => {
     updateElement(element.id, { props: { ...props, ...newProps } });
@@ -57,49 +75,59 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
     updateElement(element.id, { points: basePoints });
   };
 
-  const shiftLine = (dx: number, dy: number) => {
-    if (!element.points || element.points.length < 2) return;
-    const shifted = element.points.map((point) => ({
-      x: point.x + dx,
-      y: point.y + dy,
-    }));
-    updateElement(element.id, { points: shifted });
-  };
-
   const updateLineStart = (coord: 'x' | 'y', value: number) => {
     const safe = Number.isFinite(value) ? value : lineStart[coord];
-    const delta = safe - lineStart[coord];
-    shiftLine(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
+    const nextStart = { ...lineStart, [coord]: safe };
+    updateLinePoints(nextStart, { ...lineEnd });
   };
 
   const updateLineEnd = (coord: 'x' | 'y', value: number) => {
     const safe = Number.isFinite(value) ? value : lineEnd[coord];
-    const nextStart = { ...lineStart };
     const nextEnd = { ...lineEnd, [coord]: safe };
-    updateLinePoints(nextStart, nextEnd);
+    updateLinePoints({ ...lineStart }, nextEnd);
   };
 
-  const updateLineBoundsPosition = (coord: 'x' | 'y', value: number) => {
-    const current = coord === 'x' ? lineBounds.x : lineBounds.y;
-    const safe = Number.isFinite(value) ? value : current;
-    const delta = safe - current;
-    shiftLine(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
+  const updateLineFromActivePoint = (nextActive: { x: number; y: number }) => {
+    if (activeLineEndpoint === 'start') {
+      updateLinePoints(nextActive, { ...lineEnd });
+      return;
+    }
+    updateLinePoints({ ...lineStart }, nextActive);
+  };
+
+  const updateLineActiveCoord = (coord: 'x' | 'y', value: number) => {
+    const safe = Number.isFinite(value) ? value : activeLinePoint[coord];
+    const nextActive = { ...activeLinePoint, [coord]: safe };
+    updateLineFromActivePoint(nextActive);
   };
 
   const updateLineSize = (axis: 'width' | 'height', value: number) => {
-    const safe = clampMin(value, axis === 'width' ? lineBounds.width : lineBounds.height, 1);
-    const nextStart = { ...lineStart };
-    const nextEnd = { ...lineEnd };
+    const safe = clampMin(value, axis === 'width' ? lineSize.width : lineSize.height, 0);
+    const nextActive = { ...activeLinePoint };
 
     if (axis === 'width') {
-      const direction = lineEnd.x - lineStart.x >= 0 ? 1 : -1;
-      nextEnd.x = nextStart.x + direction * safe;
+      const direction = activeLinePoint.x - fixedLinePoint.x >= 0 ? 1 : -1;
+      nextActive.x = fixedLinePoint.x + direction * safe;
     } else {
-      const direction = lineEnd.y - lineStart.y >= 0 ? 1 : -1;
-      nextEnd.y = nextStart.y + direction * safe;
+      const direction = activeLinePoint.y - fixedLinePoint.y >= 0 ? 1 : -1;
+      nextActive.y = fixedLinePoint.y + direction * safe;
     }
 
-    updateLinePoints(nextStart, nextEnd);
+    updateLineFromActivePoint(nextActive);
+  };
+
+  const updateLineRotation = (rotation: number) => {
+    const safe = Number.isFinite(rotation) ? rotation : lineRotation;
+    const dx = activeLinePoint.x - fixedLinePoint.x;
+    const dy = activeLinePoint.y - fixedLinePoint.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 0.0001) return;
+    const radians = (safe * Math.PI) / 180;
+    const nextActive = {
+      x: fixedLinePoint.x + Math.cos(radians) * length,
+      y: fixedLinePoint.y + Math.sin(radians) * length,
+    };
+    updateLineFromActivePoint(nextActive);
   };
 
   const updateEllipseRadius = (axis: 'x' | 'y', value: number) => {
@@ -131,10 +159,10 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
     });
   };
 
-  const displayWidth = isLine ? lineBounds.width : width;
-  const displayHeight = isLine ? lineBounds.height : height;
-  const displayX = isLine ? lineBounds.x : element.x;
-  const displayY = isLine ? lineBounds.y : element.y;
+  const displayWidth = isLine ? lineSize.width : width;
+  const displayHeight = isLine ? lineSize.height : height;
+  const displayX = isLine ? activeLinePoint.x : element.x;
+  const displayY = isLine ? activeLinePoint.y : element.y;
 
   return (
     <div className="space-y-4">
@@ -149,7 +177,7 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
               onChange={(e) => {
                 const next = Number(e.target.value);
                 if (isLine) {
-                  updateLineBoundsPosition('x', next);
+                  updateLineActiveCoord('x', next);
                 } else {
                   updatePosition({ x: next });
                 }
@@ -166,7 +194,7 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
               onChange={(e) => {
                 const next = Number(e.target.value);
                 if (isLine) {
-                  updateLineBoundsPosition('y', next);
+                  updateLineActiveCoord('y', next);
                 } else {
                   updatePosition({ y: next });
                 }
@@ -213,66 +241,96 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
       </div>
 
       {isLine && (
-        <div>
-          <label className={LABEL_CLASS}>Endpoints</label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={LABEL_CLASS}>Start X</label>
-              <input
-                type="number"
-                value={Math.round(lineStart.x)}
-                onChange={(e) => updateLineStart('x', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
+        <div className="space-y-4">
+          <div>
+            <label className={LABEL_CLASS}>Active Endpoint</label>
+            <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
+              <button
+                onClick={() => setLineEndpointSelection(element.id, 'start')}
+                className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              >
+                Start
+              </button>
+              <button
+                onClick={() => setLineEndpointSelection(element.id, 'end')}
+                className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              >
+                End
+              </button>
             </div>
-            <div>
-              <label className={LABEL_CLASS}>Start Y</label>
-              <input
-                type="number"
-                value={Math.round(lineStart.y)}
-                onChange={(e) => updateLineStart('y', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>End X</label>
-              <input
-                type="number"
-                value={Math.round(lineEnd.x)}
-                onChange={(e) => updateLineEnd('x', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>End Y</label>
-              <input
-                type="number"
-                value={Math.round(lineEnd.y)}
-                onChange={(e) => updateLineEnd('y', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
+          </div>
+
+          <div>
+            <label className={LABEL_CLASS}>Endpoints</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={LABEL_CLASS}>Start X</label>
+                <input
+                  type="number"
+                  value={Math.round(lineStart.x)}
+                  onFocus={() => setLineEndpointSelection(element.id, 'start')}
+                  onChange={(e) => updateLineStart('x', Number(e.target.value))}
+                  onBlur={saveToHistory}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Start Y</label>
+                <input
+                  type="number"
+                  value={Math.round(lineStart.y)}
+                  onFocus={() => setLineEndpointSelection(element.id, 'start')}
+                  onChange={(e) => updateLineStart('y', Number(e.target.value))}
+                  onBlur={saveToHistory}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>End X</label>
+                <input
+                  type="number"
+                  value={Math.round(lineEnd.x)}
+                  onFocus={() => setLineEndpointSelection(element.id, 'end')}
+                  onChange={(e) => updateLineEnd('x', Number(e.target.value))}
+                  onBlur={saveToHistory}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>End Y</label>
+                <input
+                  type="number"
+                  value={Math.round(lineEnd.y)}
+                  onFocus={() => setLineEndpointSelection(element.id, 'end')}
+                  onChange={(e) => updateLineEnd('y', Number(e.target.value))}
+                  onBlur={saveToHistory}
+                  className={INPUT_CLASS}
+                />
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {!isLine && (
-        <div>
-          <label className={LABEL_CLASS}>Rotation: {Math.round((element.rotation || 0) * 10) / 10}°</label>
-          <SliderField
-            min={-180}
-            max={180}
-            step={1}
-            value={element.rotation || 0}
-            onValueChange={(value) => updateRotation(value)}
-            ariaLabel="Shape rotation"
-          />
-        </div>
-      )}
+      <div>
+        <label className={LABEL_CLASS}>
+          Rotation: {Math.round(((isLine ? lineRotation : element.rotation || 0) * 10)) / 10}°
+        </label>
+        <SliderField
+          min={-180}
+          max={180}
+          step={1}
+          value={isLine ? lineRotation : element.rotation || 0}
+          onValueChange={(value) => {
+            if (isLine) {
+              updateLineRotation(value);
+            } else {
+              updateRotation(value);
+            }
+          }}
+          ariaLabel="Shape rotation"
+        />
+      </div>
 
       <div>
         <label className={LABEL_CLASS}>Padding: {props.padding ?? 0}px</label>

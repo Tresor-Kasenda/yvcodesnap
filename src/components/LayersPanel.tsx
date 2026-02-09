@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useRef } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
 import type { CanvasElement, ShapeElement } from '../types';
 
@@ -44,7 +44,7 @@ const LayerItem = memo(({
 }: {
   element: CanvasElement;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (event: React.MouseEvent<HTMLDivElement>) => void;
   onToggleLock: () => void;
   onToggleVisibility: () => void;
 }) => {
@@ -113,7 +113,7 @@ const LayerItem = memo(({
   return (
     <div
       onClick={onSelect}
-      className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${isSelected
+      className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all ${isSelected
         ? 'bg-blue-100 dark:bg-blue-600/20 border border-blue-300 dark:border-blue-500/50'
         : 'hover:bg-neutral-100 dark:hover:bg-white/5 border border-transparent'
         }`}
@@ -124,7 +124,7 @@ const LayerItem = memo(({
       </div>
 
       {/* Element name */}
-      <span className={`flex-1 text-sm truncate ${isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
+      <span className={`flex-1 text-[11px] truncate ${isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'
         } ${!element.visible ? 'opacity-50' : ''}`}>
         {getElementLabel(element)}
       </span>
@@ -137,7 +137,7 @@ const LayerItem = memo(({
             e.stopPropagation();
             onToggleLock();
           }}
-          className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.locked ? 'text-yellow-600 dark:text-yellow-400' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+          className={`p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.locked ? 'text-yellow-600 dark:text-yellow-400' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
             }`}
           title={element.locked ? 'Unlock' : 'Lock'}
         >
@@ -158,7 +158,7 @@ const LayerItem = memo(({
             e.stopPropagation();
             onToggleVisibility();
           }}
-          className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.visible ? 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300' : 'text-red-500 dark:text-red-400'
+          className={`p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.visible ? 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300' : 'text-red-500 dark:text-red-400'
             }`}
           title={element.visible ? 'Hide' : 'Show'}
         >
@@ -184,13 +184,14 @@ const LayersPanel: React.FC = () => {
   const {
     snap,
     selectedElementIds,
-    selectElement,
+    setSelectedElementIds,
     setTool,
     updateElement,
     moveElementUp,
     moveElementDown,
     deleteElement,
   } = useCanvasStore();
+  const lastSelectedIdRef = useRef<string | null>(null);
 
   const elements = useMemo(() => [...snap.elements].reverse(), [snap.elements]); // Show top layers first
 
@@ -221,16 +222,64 @@ const LayersPanel: React.FC = () => {
     [snap.elements, selectedElementIds]
   );
 
+  const handleLayerSelect = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>, id: string) => {
+      setTool('select');
+
+      const isRangeSelection = event.shiftKey;
+      const isToggleSelection = event.metaKey || event.ctrlKey;
+      const orderedIds = elements.map((element) => element.id);
+
+      if (isRangeSelection) {
+        const fallbackAnchor = selectedElementIds[selectedElementIds.length - 1] ?? id;
+        const anchorId = lastSelectedIdRef.current ?? fallbackAnchor;
+        const anchorIndex = orderedIds.indexOf(anchorId);
+        const currentIndex = orderedIds.indexOf(id);
+
+        if (anchorIndex === -1 || currentIndex === -1) {
+          setSelectedElementIds([id]);
+          lastSelectedIdRef.current = id;
+          return;
+        }
+
+        const start = Math.min(anchorIndex, currentIndex);
+        const end = Math.max(anchorIndex, currentIndex);
+        const rangeIds = orderedIds.slice(start, end + 1);
+        const nextIds = isToggleSelection
+          ? Array.from(new Set([...selectedElementIds, ...rangeIds]))
+          : rangeIds;
+
+        setSelectedElementIds(nextIds);
+        lastSelectedIdRef.current = id;
+        return;
+      }
+
+      if (isToggleSelection) {
+        const nextIds = selectedElementIds.includes(id)
+          ? selectedElementIds.filter((selectedId) => selectedId !== id)
+          : [...selectedElementIds, id];
+
+        setSelectedElementIds(nextIds);
+        lastSelectedIdRef.current = id;
+        return;
+      }
+
+      setSelectedElementIds([id]);
+      lastSelectedIdRef.current = id;
+    },
+    [elements, selectedElementIds, setSelectedElementIds, setTool]
+  );
+
   return (
     <div className="w-64 sm:w-56 bg-white dark:bg-[#09090b] border-r border-neutral-200 dark:border-white/5 flex flex-col h-full shadow-2xl md:shadow-none">
-      <div className="p-3 sm:p-4 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between">
-        <h3 className="text-neutral-900 dark:text-white font-semibold text-sm uppercase tracking-wider">Layers</h3>
-        <span className="text-xs text-neutral-400 dark:text-neutral-500">{elements.length}</span>
+      <div className="p-2 sm:p-2.5 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between">
+        <h3 className="text-neutral-900 dark:text-white font-semibold text-[10px] uppercase tracking-wider">Layers</h3>
+        <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{elements.length}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-1.5 overscroll-contain">
         {elements.length === 0 ? (
-          <div className="text-neutral-400 dark:text-neutral-500 text-xs text-center py-8">
+          <div className="text-neutral-400 dark:text-neutral-500 text-[10px] text-center py-6">
             No elements yet.
             <br />
             Click on the canvas to add elements.
@@ -242,10 +291,7 @@ const LayersPanel: React.FC = () => {
                 key={element.id}
                 element={element}
                 isSelected={selectedElementIds.includes(element.id)}
-                onSelect={() => {
-                  setTool('select');
-                  selectElement(element.id, false); // Single select by default here, could add modifier key logic
-                }}
+                onSelect={(event) => handleLayerSelect(event, element.id)}
                 onToggleLock={() => handleToggleLock(element.id, element.locked)}
                 onToggleVisibility={() => handleToggleVisibility(element.id, element.visible)}
               />
@@ -256,19 +302,19 @@ const LayersPanel: React.FC = () => {
 
       {/* Layer actions footer */}
       {selectedElement && (
-        <div className="p-2 sm:p-3 border-t border-neutral-200 dark:border-white/5 space-y-2 sm:space-y-3 bg-neutral-50 dark:bg-[#09090b]/80 backdrop-blur-sm">
+        <div className="p-1.5 sm:p-2 border-t border-neutral-200 dark:border-white/5 space-y-1.5 sm:space-y-2 bg-neutral-50 dark:bg-[#09090b]/80 backdrop-blur-sm">
           <input
             type="text"
             value={selectedElement.name ?? getElementLabel(selectedElement)}
             onChange={(e) => updateElement(selectedElement.id, { name: e.target.value })}
-            className="w-full px-2.5 py-2 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500/60 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+            className="w-full px-2 py-1.5 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-[10px] text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500/60 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
             placeholder="Layer name"
           />
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-1.5">
             <div className="flex gap-1">
               <button
                 onClick={handleMoveDown}
-                className="p-2 sm:p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors active:scale-95"
+                className="p-1.5 sm:p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors active:scale-95"
                 title="Move Down (Back)"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -277,7 +323,7 @@ const LayersPanel: React.FC = () => {
               </button>
               <button
                 onClick={handleMoveUp}
-                className="p-2 sm:p-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors active:scale-95"
+                className="p-1.5 sm:p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors active:scale-95"
                 title="Move Up (Front)"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -287,7 +333,7 @@ const LayersPanel: React.FC = () => {
             </div>
             <button
               onClick={handleDelete}
-              className="p-2 sm:p-1.5 rounded-md hover:bg-red-500/10 text-neutral-600 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors active:scale-95"
+              className="p-1.5 sm:p-1 rounded-md hover:bg-red-500/10 text-neutral-600 dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors active:scale-95"
               title="Delete"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

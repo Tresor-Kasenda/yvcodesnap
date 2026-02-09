@@ -23,12 +23,15 @@ interface HistoryState {
 }
 
 export type ToolId = 'select' | 'code' | 'text' | 'image' | 'arrow' | 'rectangle' | 'ellipse' | 'line' | 'polygon' | 'star';
+export type LineEndpoint = 'start' | 'end';
 
 interface CanvasState {
   snap: Snap;
   activeCloudSnapId: string | null;
   activeCloudSnapSignature: string | null;
   selectedElementIds: string[];
+  lineEndpointSelection: { elementId: string; endpoint: LineEndpoint } | null;
+  arrowEndpointSelection: { elementId: string; endpoint: LineEndpoint } | null;
   zoom: number;
   showGrid: boolean;
   tool: ToolId;
@@ -55,6 +58,9 @@ interface CanvasState {
   duplicateElement: (id?: string) => void;
 
   selectElement: (id: string | null, multi?: boolean) => void;
+  setSelectedElementIds: (ids: string[]) => void;
+  setLineEndpointSelection: (elementId: string | null, endpoint?: LineEndpoint) => void;
+  setArrowEndpointSelection: (elementId: string | null, endpoint?: LineEndpoint) => void;
   selectAll: () => void;
   setZoom: (zoom: number) => void;
   setShowGrid: (show: boolean) => void;
@@ -157,6 +163,8 @@ export const useCanvasStore = create<CanvasState>()(
       activeCloudSnapId: null,
       activeCloudSnapSignature: null,
       selectedElementIds: [],
+      lineEndpointSelection: null,
+      arrowEndpointSelection: null,
       zoom: 0.5,
       showGrid: false,
       tool: 'select',
@@ -175,6 +183,9 @@ export const useCanvasStore = create<CanvasState>()(
         state.snap = snap;
         state.activeCloudSnapId = null;
         state.activeCloudSnapSignature = null;
+        state.selectedElementIds = [];
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
       }),
 
       setCloudSyncState: (id, snapToSync) => set((state) => {
@@ -194,6 +205,14 @@ export const useCanvasStore = create<CanvasState>()(
         get().saveToHistory();
         state.snap.elements.push(element);
         state.selectedElementIds = [element.id];
+        state.lineEndpointSelection =
+          element.type === 'shape' && element.props.kind === 'line'
+            ? { elementId: element.id, endpoint: 'end' }
+            : null;
+        state.arrowEndpointSelection =
+          element.type === 'arrow'
+            ? { elementId: element.id, endpoint: 'end' }
+            : null;
       }),
 
       updateElement: (id, updates) => set((state) => {
@@ -213,6 +232,18 @@ export const useCanvasStore = create<CanvasState>()(
         const idsToDelete = id ? [id] : state.selectedElementIds;
         state.snap.elements = state.snap.elements.filter((el) => !idsToDelete.includes(el.id));
         state.selectedElementIds = state.selectedElementIds.filter((selId) => !idsToDelete.includes(selId));
+        if (
+          state.lineEndpointSelection &&
+          idsToDelete.includes(state.lineEndpointSelection.elementId)
+        ) {
+          state.lineEndpointSelection = null;
+        }
+        if (
+          state.arrowEndpointSelection &&
+          idsToDelete.includes(state.arrowEndpointSelection.elementId)
+        ) {
+          state.arrowEndpointSelection = null;
+        }
       }),
 
       duplicateElement: (id) => set((state) => {
@@ -244,11 +275,17 @@ export const useCanvasStore = create<CanvasState>()(
         });
 
         state.selectedElementIds = newIds;
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
       }),
 
       selectElement: (id, multi = false) => set((state) => {
         if (id === null) {
-          if (!multi) state.selectedElementIds = [];
+          if (!multi) {
+            state.selectedElementIds = [];
+            state.lineEndpointSelection = null;
+            state.arrowEndpointSelection = null;
+          }
           return;
         }
 
@@ -260,11 +297,72 @@ export const useCanvasStore = create<CanvasState>()(
           }
         } else {
           state.selectedElementIds = [id];
+          if (state.lineEndpointSelection?.elementId !== id) {
+            state.lineEndpointSelection = null;
+          }
+          if (state.arrowEndpointSelection?.elementId !== id) {
+            state.arrowEndpointSelection = null;
+          }
         }
+
+        if (state.selectedElementIds.length !== 1) {
+          state.lineEndpointSelection = null;
+          state.arrowEndpointSelection = null;
+        }
+      }),
+
+      setSelectedElementIds: (ids) => set((state) => {
+        const uniqueIds = new Set(ids);
+        state.selectedElementIds = state.snap.elements
+          .map((element) => element.id)
+          .filter((id) => uniqueIds.has(id));
+        if (state.selectedElementIds.length !== 1) {
+          state.lineEndpointSelection = null;
+          state.arrowEndpointSelection = null;
+        } else if (state.lineEndpointSelection?.elementId !== state.selectedElementIds[0]) {
+          state.lineEndpointSelection = null;
+        }
+        if (state.selectedElementIds.length !== 1) {
+          state.arrowEndpointSelection = null;
+        } else if (state.arrowEndpointSelection?.elementId !== state.selectedElementIds[0]) {
+          state.arrowEndpointSelection = null;
+        }
+      }),
+
+      setLineEndpointSelection: (elementId, endpoint = 'end') => set((state) => {
+        if (!elementId) {
+          state.lineEndpointSelection = null;
+          return;
+        }
+
+        const element = state.snap.elements.find((el) => el.id === elementId);
+        if (!element || element.type !== 'shape' || element.props.kind !== 'line') {
+          state.lineEndpointSelection = null;
+          return;
+        }
+
+        state.lineEndpointSelection = { elementId, endpoint };
+      }),
+
+      setArrowEndpointSelection: (elementId, endpoint = 'end') => set((state) => {
+        if (!elementId) {
+          state.arrowEndpointSelection = null;
+          return;
+        }
+
+        const element = state.snap.elements.find((el) => el.id === elementId);
+        if (!element || element.type !== 'arrow') {
+          state.arrowEndpointSelection = null;
+          return;
+        }
+
+        state.arrowEndpointSelection = { elementId, endpoint };
       }),
 
       selectAll: () => set((state) => {
         state.selectedElementIds = state.snap.elements.map((el) => el.id);
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
       }),
 
       setZoom: (zoom) => set((state) => {
@@ -333,6 +431,8 @@ export const useCanvasStore = create<CanvasState>()(
           state.history.future.push(JSON.parse(JSON.stringify(state.snap)));
           state.snap = previous;
           state.selectedElementIds = [];
+          state.lineEndpointSelection = null;
+          state.arrowEndpointSelection = null;
         }
       }),
 
@@ -342,6 +442,8 @@ export const useCanvasStore = create<CanvasState>()(
           state.history.past.push(JSON.parse(JSON.stringify(state.snap)));
           state.snap = next;
           state.selectedElementIds = [];
+          state.lineEndpointSelection = null;
+          state.arrowEndpointSelection = null;
         }
       }),
 
@@ -394,6 +496,8 @@ export const useCanvasStore = create<CanvasState>()(
           });
 
           state.selectedElementIds = newIds;
+          state.lineEndpointSelection = null;
+          state.arrowEndpointSelection = null;
         }
       }),
 
@@ -405,6 +509,8 @@ export const useCanvasStore = create<CanvasState>()(
         state.activeCloudSnapId = null;
         state.activeCloudSnapSignature = null;
         state.selectedElementIds = [];
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
         state.history = { past: [], future: [] };
       }),
 
@@ -421,6 +527,8 @@ export const useCanvasStore = create<CanvasState>()(
             state.activeCloudSnapId = cloudSnapId;
             state.activeCloudSnapSignature = cloudSnapId ? getSnapSignature(snap) : null;
             state.selectedElementIds = [];
+            state.lineEndpointSelection = null;
+            state.arrowEndpointSelection = null;
             state.history = { past: [], future: [] };
           });
         } catch (e) {
@@ -510,6 +618,8 @@ export const useCanvasStore = create<CanvasState>()(
 
         state.snap.elements.push(newGroup);
         state.selectedElementIds = [newGroup.id];
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
       }),
 
       ungroupSelection: () => set((state) => {
@@ -542,6 +652,8 @@ export const useCanvasStore = create<CanvasState>()(
         });
 
         state.selectedElementIds = [];
+        state.lineEndpointSelection = null;
+        state.arrowEndpointSelection = null;
       }),
 
       alignSelection: (alignment) => set((state) => {

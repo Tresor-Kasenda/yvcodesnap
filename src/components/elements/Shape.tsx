@@ -2,6 +2,7 @@ import React from 'react';
 import { Group, Rect, Ellipse, Line, RegularPolygon, Star } from 'react-konva';
 import type Konva from 'konva';
 import type { ShapeElement } from '../../types';
+import { useCanvasStore } from '../../store/canvasStore';
 
 interface ShapeProps {
   element: ShapeElement;
@@ -13,6 +14,8 @@ interface ShapeProps {
 
 const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, draggable }) => {
   const { props, width, height } = element;
+  const lineEndpointSelection = useCanvasStore((state) => state.lineEndpointSelection);
+  const setLineEndpointSelection = useCanvasStore((state) => state.setLineEndpointSelection);
   const strokeWidth = props.strokeWidth ?? 2;
   const padding = Math.max(0, props.padding ?? 0);
   const innerWidth = Math.max(1, Math.abs(width) - padding * 2);
@@ -63,9 +66,24 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
     },
   };
 
+  const setLinePoint = (isStart: boolean, point: { x: number; y: number }) => {
+    if (!element.points || element.points.length < 2) return;
+    const nextPoints = [...element.points];
+    if (isStart) {
+      nextPoints[0] = point;
+    } else {
+      nextPoints[nextPoints.length - 1] = point;
+    }
+    onChange({ points: nextPoints });
+  };
+
   if (props.kind === 'line' && element.points && element.points.length >= 2) {
     const start = element.points[0];
     const end = element.points[element.points.length - 1];
+    const activeEndpoint =
+      lineEndpointSelection?.elementId === element.id
+        ? lineEndpointSelection.endpoint
+        : 'end';
     const dx = end.x - start.x;
     const dy = end.y - start.y;
     const length = Math.hypot(dx, dy);
@@ -75,27 +93,99 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
     const endX = effectivePadding > 0 ? end.x - (dx / length) * effectivePadding : end.x;
     const endY = effectivePadding > 0 ? end.y - (dy / length) * effectivePadding : end.y;
     const pts = [startX, startY, endX, endY];
+    const handleSize = 10;
+    const handleRotation = (Math.atan2(dy, dx) * 180) / Math.PI;
     return (
       <Group {...common}>
-        {isSelected && (
-          <Line
-            points={pts}
-            stroke={outlineColor}
-            strokeWidth={strokeWidth + 6}
-            lineCap="round"
-            lineJoin="round"
-            opacity={0.35}
-            listening={false}
-          />
-        )}
         <Line
           points={pts}
           lineCap="round"
           lineJoin="round"
           stroke={props.stroke}
           strokeWidth={strokeWidth}
+          hitStrokeWidth={Math.max(12, strokeWidth + 8)}
           listening={true}
         />
+        {isSelected && (
+          <>
+            <Rect
+              x={start.x}
+              y={start.y}
+              width={handleSize}
+              height={handleSize}
+              offsetX={handleSize / 2}
+              offsetY={handleSize / 2}
+              rotation={handleRotation}
+              fill={activeEndpoint === 'start' ? '#dbeafe' : '#ffffff'}
+              stroke="#3b82f6"
+              strokeWidth={2}
+              shadowColor="rgba(0,0,0,0.15)"
+              shadowBlur={4}
+              shadowOffset={{ x: 0, y: 1 }}
+              draggable={!element.locked}
+              onMouseDown={(e) => {
+                e.cancelBubble = true;
+                setLineEndpointSelection(element.id, 'start');
+                onSelect();
+              }}
+              onTap={(e) => {
+                e.cancelBubble = true;
+                setLineEndpointSelection(element.id, 'start');
+                onSelect();
+              }}
+              onDragMove={(e) => setLinePoint(true, { x: e.target.x(), y: e.target.y() })}
+              onDragEnd={(e) => setLinePoint(true, { x: e.target.x(), y: e.target.y() })}
+              onMouseEnter={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = 'grab';
+                e.target.scale({ x: 1.4, y: 1.4 });
+              }}
+              onMouseLeave={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = 'default';
+                e.target.scale({ x: 1, y: 1 });
+              }}
+            />
+            <Rect
+              x={end.x}
+              y={end.y}
+              width={handleSize}
+              height={handleSize}
+              offsetX={handleSize / 2}
+              offsetY={handleSize / 2}
+              rotation={handleRotation}
+              fill={activeEndpoint === 'end' ? '#dbeafe' : '#ffffff'}
+              stroke="#3b82f6"
+              strokeWidth={2}
+              shadowColor="rgba(0,0,0,0.15)"
+              shadowBlur={4}
+              shadowOffset={{ x: 0, y: 1 }}
+              draggable={!element.locked}
+              onMouseDown={(e) => {
+                e.cancelBubble = true;
+                setLineEndpointSelection(element.id, 'end');
+                onSelect();
+              }}
+              onTap={(e) => {
+                e.cancelBubble = true;
+                setLineEndpointSelection(element.id, 'end');
+                onSelect();
+              }}
+              onDragMove={(e) => setLinePoint(false, { x: e.target.x(), y: e.target.y() })}
+              onDragEnd={(e) => setLinePoint(false, { x: e.target.x(), y: e.target.y() })}
+              onMouseEnter={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = 'grab';
+                e.target.scale({ x: 1.4, y: 1.4 });
+              }}
+              onMouseLeave={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = 'default';
+                e.target.scale({ x: 1, y: 1 });
+              }}
+            />
+          </>
+        )}
       </Group>
     );
   }

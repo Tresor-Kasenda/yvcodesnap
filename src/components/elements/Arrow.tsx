@@ -1,7 +1,8 @@
 import React, { useRef, useMemo } from 'react';
-import { Group, Arrow as KonvaArrow, Circle, Line, Text } from 'react-konva';
+import { Group, Arrow as KonvaArrow, Circle, Line, Text, Rect } from 'react-konva';
 import type Konva from 'konva';
 import type { ArrowElement } from '../../types';
+import { useCanvasStore } from '../../store/canvasStore';
 
 interface ArrowProps {
   element: ArrowElement;
@@ -86,9 +87,15 @@ const getPointOnBezier = (
 
 const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, draggable }) => {
   const arrowRef = useRef<Konva.Arrow>(null);
+  const arrowEndpointSelection = useCanvasStore((state) => state.arrowEndpointSelection);
+  const setArrowEndpointSelection = useCanvasStore((state) => state.setArrowEndpointSelection);
   const { points, props } = element;
   const start = points[0];
   const end = points[points.length - 1];
+  const activeEndpoint =
+    arrowEndpointSelection?.elementId === element.id
+      ? arrowEndpointSelection.endpoint
+      : 'end';
 
   const hasValidEndpoints =
     !!start &&
@@ -100,6 +107,7 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
 
   const dx = hasValidEndpoints ? end.x - start.x : 0;
   const dy = hasValidEndpoints ? end.y - start.y : 0;
+  const endpointHandleRotation = (Math.atan2(dy, dx) * 180) / Math.PI;
   const isDegenerate = !hasValidEndpoints || Math.hypot(dx, dy) < 0.5;
 
   // Konva can throw when drawing shadows for 0x0 bounds (e.g. when start/end overlap).
@@ -353,56 +361,91 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
       {/* Endpoint control points when selected */}
       {isSelected && (
         <>
-          {/* Start point */}
-          <Circle
-            x={start.x}
-            y={start.y}
-            radius={5}
-            fill="#ffffff"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            shadowColor="rgba(0,0,0,0.15)"
-            shadowBlur={4}
-            shadowOffset={{ x: 0, y: 1 }}
-            draggable={!element.locked}
-            onDragMove={(e) => handlePointDrag(0, e)}
-            onDragEnd={(e) => handlePointDrag(0, e)}
-            onMouseEnter={(e) => {
-              const container = e.target.getStage()?.container();
-              if (container) container.style.cursor = 'grab';
-              e.target.scale({ x: 1.5, y: 1.5 });
-            }}
-            onMouseLeave={(e) => {
-              const container = e.target.getStage()?.container();
-              if (container) container.style.cursor = 'default';
-              e.target.scale({ x: 1, y: 1 });
-            }}
-          />
-          {/* End point */}
-          <Circle
-            x={end.x}
-            y={end.y}
-            radius={5}
-            fill="#ffffff"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            shadowColor="rgba(0,0,0,0.15)"
-            shadowBlur={4}
-            shadowOffset={{ x: 0, y: 1 }}
-            draggable={!element.locked}
-            onDragMove={(e) => handlePointDrag(points.length - 1, e)}
-            onDragEnd={(e) => handlePointDrag(points.length - 1, e)}
-            onMouseEnter={(e) => {
-              const container = e.target.getStage()?.container();
-              if (container) container.style.cursor = 'grab';
-              e.target.scale({ x: 1.5, y: 1.5 });
-            }}
-            onMouseLeave={(e) => {
-              const container = e.target.getStage()?.container();
-              if (container) container.style.cursor = 'default';
-              e.target.scale({ x: 1, y: 1 });
-            }}
-          />
+          {(() => {
+            const handleSize = 10;
+            return (
+              <>
+                {/* Start point */}
+                <Rect
+                  x={start.x}
+                  y={start.y}
+                  width={handleSize}
+                  height={handleSize}
+                  offsetX={handleSize / 2}
+                  offsetY={handleSize / 2}
+                  rotation={endpointHandleRotation}
+                  fill={activeEndpoint === 'start' ? '#dbeafe' : '#ffffff'}
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  shadowColor="rgba(0,0,0,0.15)"
+                  shadowBlur={4}
+                  shadowOffset={{ x: 0, y: 1 }}
+                  draggable={!element.locked}
+                  onMouseDown={(e) => {
+                    e.cancelBubble = true;
+                    setArrowEndpointSelection(element.id, 'start');
+                    onSelect();
+                  }}
+                  onTap={(e) => {
+                    e.cancelBubble = true;
+                    setArrowEndpointSelection(element.id, 'start');
+                    onSelect();
+                  }}
+                  onDragMove={(e) => handlePointDrag(0, e)}
+                  onDragEnd={(e) => handlePointDrag(0, e)}
+                  onMouseEnter={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) container.style.cursor = 'grab';
+                    e.target.scale({ x: 1.4, y: 1.4 });
+                  }}
+                  onMouseLeave={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) container.style.cursor = 'default';
+                    e.target.scale({ x: 1, y: 1 });
+                  }}
+                />
+                {/* End point */}
+                <Rect
+                  x={end.x}
+                  y={end.y}
+                  width={handleSize}
+                  height={handleSize}
+                  offsetX={handleSize / 2}
+                  offsetY={handleSize / 2}
+                  rotation={endpointHandleRotation}
+                  fill={activeEndpoint === 'end' ? '#dbeafe' : '#ffffff'}
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  shadowColor="rgba(0,0,0,0.15)"
+                  shadowBlur={4}
+                  shadowOffset={{ x: 0, y: 1 }}
+                  draggable={!element.locked}
+                  onMouseDown={(e) => {
+                    e.cancelBubble = true;
+                    setArrowEndpointSelection(element.id, 'end');
+                    onSelect();
+                  }}
+                  onTap={(e) => {
+                    e.cancelBubble = true;
+                    setArrowEndpointSelection(element.id, 'end');
+                    onSelect();
+                  }}
+                  onDragMove={(e) => handlePointDrag(points.length - 1, e)}
+                  onDragEnd={(e) => handlePointDrag(points.length - 1, e)}
+                  onMouseEnter={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) container.style.cursor = 'grab';
+                    e.target.scale({ x: 1.4, y: 1.4 });
+                  }}
+                  onMouseLeave={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) container.style.cursor = 'default';
+                    e.target.scale({ x: 1, y: 1 });
+                  }}
+                />
+              </>
+            );
+          })()}
         </>
       )}
     </Group>
