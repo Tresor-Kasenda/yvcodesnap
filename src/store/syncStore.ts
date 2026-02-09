@@ -4,6 +4,19 @@ import type { Snap, CloudSnap, SyncState } from '../types';
 import { useAuthStore } from './authStore';
 import { toast } from 'sonner';
 
+const getCurrentCloudSnapCount = async (userId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('snaps')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+};
+
 interface SyncStoreState extends SyncState {
   cloudSnaps: CloudSnap[];
 
@@ -15,7 +28,7 @@ interface SyncStoreState extends SyncState {
   loadSnapFromCloud: (id: string) => Promise<{ snap?: Snap; error?: string }>;
 
   // Migration
-  migrateLocalSnaps: (localSnaps: Snap[]) => Promise<void>;
+  migrateLocalSnaps: (localSnaps: Snap[]) => Promise<{ migratedCount: number; skippedCount: number; error?: string }>;
 
   // Sync status
   setStatus: (status: SyncState['status']) => void;
@@ -63,8 +76,15 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
 
     // Check subscription limit
     const { subscription } = useAuthStore.getState();
-    if (subscription.current_snap_count >= subscription.snap_limit && subscription.snap_limit !== -1) {
-      return { error: `You've reached your free limit of ${subscription.snap_limit} snaps. Upgrade to Pro for unlimited snaps!` };
+    if (subscription.snap_limit !== -1) {
+      try {
+        const liveSnapCount = await getCurrentCloudSnapCount(user.id);
+        if (liveSnapCount >= subscription.snap_limit) {
+          return { error: `You've reached your free limit of ${subscription.snap_limit} snaps. Upgrade to Pro for unlimited snaps!` };
+        }
+      } catch (error: any) {
+        return { error: `Unable to verify your snap limit right now: ${error.message}` };
+      }
     }
 
     set({ status: 'syncing' });
@@ -123,19 +143,30 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
   },
 
   updateCloudSnap: async (id, snap) => {
+    const user = useAuthStore.getState().user;
+    if (!user) {
+      return { error: 'Not authenticated' };
+    }
+
     set({ status: 'syncing' });
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('snaps')
         .update({
           title: snap.meta.title || 'Untitled',
           data: snap,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select('id')
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        throw new Error('Cloud snap introuvable. Sauvegardez comme nouveau snap.');
+      }
 
       await get().fetchCloudSnaps();
       set({ status: 'idle', lastSyncAt: Date.now(), error: undefined });
@@ -188,15 +219,63 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
 
   migrateLocalSnaps: async (localSnaps) => {
     const user = useAuthStore.getState().user;
-    if (!user || localSnaps.length === 0) return;
+    if (!user || localSnaps.length === 0) {
+      return { migratedCount: 0, skippedCount: 0 };
+    }
 
     set({ status: 'syncing' });
     toast.info(`Migrating ${localSnaps.length} local projects...`);
 
     try {
-      // Upload all local snaps (respecting limit)
+      const buildSignature = (snap: Snap, titleOverride?: string) => {
+        const title = titleOverride ?? snap.meta.title ?? 'Untitled';
+        return `${title}::${JSON.stringify(snap)}`;
+      };
+
+      // Deduplicate against existing cloud snaps and duplicates in local batch.
+      const { data: existingRows, error: existingRowsError } = await supabase
+        .from('snaps')
+        .select('title, data')
+        .eq('user_id', user.id);
+
+      if (existingRowsError) {
+        throw existingRowsError;
+      }
+
+      const existingSignatures = new Set<string>(
+        ((existingRows ?? []) as Array<{ title: string; data: Snap }>).map((row) => buildSignature(row.data, row.title))
+      );
+
+      const uniqueLocalSnaps: Snap[] = [];
+      for (const snap of localSnaps) {
+        const signature = buildSignature(snap);
+        if (existingSignatures.has(signature)) {
+          continue;
+        }
+        existingSignatures.add(signature);
+        uniqueLocalSnaps.push(snap);
+      }
+
+      if (uniqueLocalSnaps.length === 0) {
+        set({ status: 'idle', lastSyncAt: Date.now(), error: undefined });
+        toast.info('No new local projects to migrate.');
+        return { migratedCount: 0, skippedCount: localSnaps.length };
+      }
+
+      // Upload local snaps while respecting the current plan and existing cloud count.
       const { subscription } = useAuthStore.getState();
-      const snapsToMigrate = localSnaps.slice(0, subscription.snap_limit === -1 ? localSnaps.length : subscription.snap_limit);
+      let availableSlots = uniqueLocalSnaps.length;
+      if (subscription.snap_limit !== -1) {
+        const currentCloudCount = await getCurrentCloudSnapCount(user.id);
+        availableSlots = Math.max(0, subscription.snap_limit - currentCloudCount);
+      }
+
+      const snapsToMigrate = uniqueLocalSnaps.slice(0, availableSlots);
+      if (snapsToMigrate.length === 0) {
+        set({ status: 'idle', lastSyncAt: Date.now(), error: undefined });
+        toast.info(`Free plan limit reached (${subscription.snap_limit} snaps). Upgrade to Pro to migrate more projects.`);
+        return { migratedCount: 0, skippedCount: localSnaps.length };
+      }
 
       const insertData = snapsToMigrate.map(snap => ({
         user_id: user.id,
@@ -214,10 +293,19 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
       await useAuthStore.getState().fetchSubscription();
 
       set({ status: 'idle', lastSyncAt: Date.now(), error: undefined });
-      toast.success(`${snapsToMigrate.length} projects migrated to cloud`);
-    } catch (error: any) {
-      set({ status: 'error', error: error.message });
-      toast.error('Migration failed: ' + error.message);
+      const skippedCount = localSnaps.length - snapsToMigrate.length;
+      if (skippedCount > 0) {
+        toast.success(`${snapsToMigrate.length} projects migrated (${skippedCount} skipped).`);
+      } else {
+        toast.success(`${snapsToMigrate.length} projects migrated to cloud`);
+      }
+
+      return { migratedCount: snapsToMigrate.length, skippedCount };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown migration error';
+      set({ status: 'error', error: message });
+      toast.error('Migration failed: ' + message);
+      return { migratedCount: 0, skippedCount: localSnaps.length, error: message };
     }
   },
 }));

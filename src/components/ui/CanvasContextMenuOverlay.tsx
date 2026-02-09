@@ -50,15 +50,15 @@ const CanvasContextMenuOverlay: React.FC = () => {
         const editItems = [];
         editItems.push({
             id: 'copy',
-            label: 'Copy Elements',
-            icon: <Copy size={14} />,
-            shortcut: 'Cmd+C',
+            label: 'Copy',
+            icon: <Copy size={12} />,
+            shortcut: '⌘C',
             onClick: copyToClipboard,
         });
         editItems.push({
             id: 'copy-image',
             label: 'Copy as Image',
-            icon: <Copy size={14} />,
+            icon: <Copy size={12} />,
             onClick: () => {
                 window.dispatchEvent(new CustomEvent('copy-canvas-image'));
             },
@@ -66,33 +66,25 @@ const CanvasContextMenuOverlay: React.FC = () => {
         editItems.push({
             id: 'duplicate',
             label: 'Duplicate',
-            icon: <SquarePlus size={14} />,
-            shortcut: 'Cmd+D',
+            icon: <SquarePlus size={12} />,
+            shortcut: '⌘D',
             onClick: () => duplicateElement(),
         });
 
         editItems.push({
             id: 'paste',
             label: 'Paste',
-            icon: <ClipboardPaste size={14} />,
-            shortcut: 'Cmd+V',
-            onClick: () => {
-                // We use the coordinates from the context menu state which were set on right-click
-                // But we need to convert them to canvas coordinates or just use current mouse if we have it.
-                // The store's pasteFromClipboard can take absolute coordinates.
-                // However, the coordinates in contextMenu are screen relative.
-                // We might need to pass canvas coordinates when setting the menu.
-                // For now, let's just use the store's default paste if we can't easily get canvas coords here.
-                pasteFromClipboard();
-            },
+            icon: <ClipboardPaste size={12} />,
+            shortcut: '⌘V',
+            onClick: pasteFromClipboard,
         });
 
         if (hasSelection) {
             editItems.push({
                 id: 'delete',
                 label: 'Delete',
-                icon: <Trash2 size={14} />,
-                shortcut: 'Backspace',
+                icon: <Trash2 size={12} />,
+                shortcut: '⌫',
                 variant: 'danger' as const,
                 onClick: () => deleteElement(),
             });
@@ -108,8 +100,8 @@ const CanvasContextMenuOverlay: React.FC = () => {
                 groupItems.push({
                     id: 'group',
                     label: 'Group',
-                    icon: <Combine size={14} />,
-                    shortcut: 'Cmd+G',
+                    icon: <Combine size={12} />,
+                    shortcut: '⌘G',
                     onClick: groupSelection,
                 });
             }
@@ -118,8 +110,8 @@ const CanvasContextMenuOverlay: React.FC = () => {
                 groupItems.push({
                     id: 'ungroup',
                     label: 'Ungroup',
-                    icon: <UngroupIcon size={14} />,
-                    shortcut: 'Cmd+Shift+G',
+                    icon: <UngroupIcon size={12} />,
+                    shortcut: '⇧⌘G',
                     onClick: ungroupSelection,
                 });
             }
@@ -127,7 +119,7 @@ const CanvasContextMenuOverlay: React.FC = () => {
             groupItems.push({
                 id: 'front',
                 label: 'Bring to Front',
-                icon: <ArrowUpToLine size={14} />,
+                icon: <ArrowUpToLine size={12} />,
                 shortcut: ']',
                 onClick: bringToFront,
             });
@@ -135,7 +127,7 @@ const CanvasContextMenuOverlay: React.FC = () => {
             groupItems.push({
                 id: 'back',
                 label: 'Send to Back',
-                icon: <ArrowDownToLine size={14} />,
+                icon: <ArrowDownToLine size={12} />,
                 shortcut: '[',
                 onClick: sendToBack,
             });
@@ -148,8 +140,8 @@ const CanvasContextMenuOverlay: React.FC = () => {
                     {
                         id: 'lock',
                         label: anyLocked ? 'Unlock' : 'Lock',
-                        icon: anyLocked ? <Unlock size={14} /> : <Lock size={14} />,
-                        shortcut: 'Cmd+L',
+                        icon: anyLocked ? <Unlock size={12} /> : <Lock size={12} />,
+                        shortcut: '⌘L',
                         onClick: () => {
                             selectedElementIds.forEach((id) => {
                                 const el = snap.elements.find((e) => e.id === id);
@@ -166,20 +158,19 @@ const CanvasContextMenuOverlay: React.FC = () => {
                     {
                         id: 'undo',
                         label: 'Undo',
-                        icon: <Undo size={14} />,
-                        shortcut: 'Cmd+Z',
+                        icon: <Undo size={12} />,
+                        shortcut: '⌘Z',
                         onClick: undo,
                     },
                     {
                         id: 'redo',
                         label: 'Redo',
-                        icon: <Redo size={14} />,
-                        shortcut: 'Cmd+Shift+Z',
+                        icon: <Redo size={12} />,
+                        shortcut: '⇧⌘Z',
                         onClick: redo,
                     },
                 ],
             });
-
         }
 
         sections.push({
@@ -187,8 +178,8 @@ const CanvasContextMenuOverlay: React.FC = () => {
                 {
                     id: 'select-all',
                     label: 'Select All',
-                    icon: <MousePointer2 size={14} />,
-                    shortcut: 'Cmd+A',
+                    icon: <MousePointer2 size={12} />,
+                    shortcut: '⌘A',
                     onClick: selectAll,
                 },
             ],

@@ -23,7 +23,7 @@ export default function CloudSnapsManager() {
   const handleLoad = async (id: string) => {
     const result = await loadSnapFromCloud(id);
     if (result.snap) {
-      importSnap(JSON.stringify(result.snap));
+      importSnap(JSON.stringify(result.snap), { cloudSnapId: id });
       setIsOpen(false);
       toast.success('Snap loaded from cloud');
     } else {

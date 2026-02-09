@@ -12,6 +12,7 @@ import UserMenu from './auth/UserMenu';
 import { toast } from 'sonner';
 import SelectField from './ui/SelectField';
 import ThemeToggle from './ThemeToggle';
+import UpgradeModal from './UpgradeModal';
 
 interface TopBarProps {
   stageRef: React.RefObject<Konva.Stage | null>;
@@ -108,11 +109,14 @@ const TopBar: React.FC<TopBarProps> = ({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportTransparent, setExportTransparent] = useState(false);
   const [savingToCloud, setSavingToCloud] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const recentButtonRef = useRef<HTMLButtonElement>(null);
   const exportButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     snap,
+    activeCloudSnapId,
+    activeCloudSnapSignature,
     updateMeta,
     newSnap,
     exportSnap,
@@ -121,11 +125,19 @@ const TopBar: React.FC<TopBarProps> = ({
     redo,
     history,
     saveToHistory,
+    setCloudSyncState,
   } = useCanvasStore();
 
   const { addRecentSnap } = useRecentSnapsStore();
   const { user, subscription } = useAuthStore();
-  const { saveSnapToCloud } = useSyncStore();
+  const { saveSnapToCloud, updateCloudSnap } = useSyncStore();
+
+  const isFreeCloudLimitReached = Boolean(
+    user
+    && subscription.tier === 'free'
+    && subscription.snap_limit !== -1
+    && subscription.current_snap_count >= subscription.snap_limit
+  );
 
   const aspectOptions = useMemo(() => {
     const names = ASPECT_RATIOS.map((r) => r.name);
@@ -301,14 +313,43 @@ const TopBar: React.FC<TopBarProps> = ({
       return;
     }
 
-    const stage = stageRef.current;
-    if (!stage) {
-      toast.error('Canvas not ready');
+    const hasCloudReference = Boolean(activeCloudSnapId);
+
+    if (!hasCloudReference && isFreeCloudLimitReached) {
+      setShowExportMenu(false);
+      setShowUpgradeModal(true);
+      toast.error(`Free plan limit reached (${subscription.snap_limit} snaps). Upgrade to Pro for unlimited cloud saves.`);
       return;
     }
 
     setSavingToCloud(true);
     try {
+      const currentSnapSignature = JSON.stringify(snap);
+      if (hasCloudReference && activeCloudSnapId) {
+        if (activeCloudSnapSignature === currentSnapSignature) {
+          toast.info('No changes to save');
+          setShowExportMenu(false);
+          return;
+        }
+
+        const updateResult = await updateCloudSnap(activeCloudSnapId, snap);
+        if (updateResult.error) {
+          toast.error(updateResult.error);
+          return;
+        }
+
+        setCloudSyncState(activeCloudSnapId, snap);
+        setShowExportMenu(false);
+        addRecentSnap(snap);
+        return;
+      }
+
+      const stage = stageRef.current;
+      if (!stage) {
+        toast.error('Canvas not ready');
+        return;
+      }
+
       // Generate thumbnail at lower quality for faster upload
       const dataUrl = stage.toDataURL({ pixelRatio: 0.5 });
       const response = await fetch(dataUrl);
@@ -323,8 +364,23 @@ const TopBar: React.FC<TopBarProps> = ({
 
       const result = await saveSnapToCloud(snap, blob);
       if (result.error) {
+        const normalizedError = result.error.toLowerCase();
+        const looksLikeLimitError = normalizedError.includes('free limit')
+          || normalizedError.includes('row-level security')
+          || normalizedError.includes('violates');
+
+        if (subscription.tier === 'free' && looksLikeLimitError) {
+          setShowExportMenu(false);
+          setShowUpgradeModal(true);
+          toast.error(`Free plan limit reached (${subscription.snap_limit} snaps). Upgrade to Pro for unlimited cloud saves.`);
+          return;
+        }
+
         toast.error(result.error);
       } else {
+        if (result.id) {
+          setCloudSyncState(result.id, snap);
+        }
         toast.success('Snap saved to cloud!');
         setShowExportMenu(false);
         addRecentSnap(snap);
@@ -335,7 +391,21 @@ const TopBar: React.FC<TopBarProps> = ({
     } finally {
       setSavingToCloud(false);
     }
-  }, [user, navigate, stageRef, snap, saveSnapToCloud, addRecentSnap]);
+  }, [
+    user,
+    navigate,
+    stageRef,
+    snap,
+    activeCloudSnapId,
+    activeCloudSnapSignature,
+    saveSnapToCloud,
+    updateCloudSnap,
+    addRecentSnap,
+    setCloudSyncState,
+    isFreeCloudLimitReached,
+    subscription.tier,
+    subscription.snap_limit,
+  ]);
 
   useEffect(() => {
     const handleGlobalCopy = () => handleCopyImage();
@@ -546,7 +616,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   {user && (
                     <button
                       onClick={handleSaveToCloud}
-                      disabled={savingToCloud}
+                      disabled={savingToCloud || (!activeCloudSnapId && isFreeCloudLimitReached)}
                       className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-cyan-100 dark:bg-cyan-600/10 hover:bg-cyan-200 dark:hover:bg-cyan-600/20 border border-cyan-200 dark:border-cyan-500/20 hover:border-cyan-300 dark:hover:border-cyan-500/40 transition-all group active:scale-[0.98] disabled:opacity-50"
                     >
                       <div className="flex items-center gap-4">
@@ -554,10 +624,30 @@ const TopBar: React.FC<TopBarProps> = ({
                           <Cloud className="w-5 h-5" />
                         </div>
                         <div className="flex flex-col items-start gap-0.5">
-                          <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">{savingToCloud ? 'Saving...' : 'Save to Cloud'}</span>
+                          <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
+                            {savingToCloud
+                              ? 'Saving...'
+                              : !activeCloudSnapId && isFreeCloudLimitReached
+                                ? 'Limit reached'
+                                : activeCloudSnapId
+                                  ? 'Update Cloud Snap'
+                                  : 'Save to Cloud'}
+                          </span>
                           <span className="text-[10px] text-cyan-600/70 dark:text-cyan-500/70">Backup & sync</span>
                         </div>
                       </div>
+                    </button>
+                  )}
+
+                  {user && subscription.tier === 'free' && isFreeCloudLimitReached && !activeCloudSnapId && (
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        setShowUpgradeModal(true);
+                      }}
+                      className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-amber-100 dark:bg-amber-500/10 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-500/50 transition-all active:scale-[0.98]"
+                    >
+                      <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Upgrade to Pro</span>
                     </button>
                   )}
                 </div>
@@ -663,6 +753,13 @@ const TopBar: React.FC<TopBarProps> = ({
           )}
         </div>
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        currentSnaps={subscription.current_snap_count}
+        maxSnaps={subscription.snap_limit}
+      />
 
     </>
   );

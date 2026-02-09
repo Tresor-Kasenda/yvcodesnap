@@ -26,6 +26,8 @@ export type ToolId = 'select' | 'code' | 'text' | 'image' | 'arrow' | 'rectangle
 
 interface CanvasState {
   snap: Snap;
+  activeCloudSnapId: string | null;
+  activeCloudSnapSignature: string | null;
   selectedElementIds: string[];
   zoom: number;
   showGrid: boolean;
@@ -43,6 +45,7 @@ interface CanvasState {
 
   // Actions
   setSnap: (snap: Snap) => void;
+  setCloudSyncState: (id: string | null, snap?: Snap) => void;
   updateMeta: (meta: Partial<CanvasMeta>) => void;
   setBackground: (background: Partial<Background>) => void;
 
@@ -70,7 +73,7 @@ interface CanvasState {
 
   newSnap: (meta: CanvasMeta) => void;
   exportSnap: () => string;
-  importSnap: (json: string) => void;
+  importSnap: (json: string, options?: { cloudSnapId?: string | null }) => void;
   groupSelection: () => void;
   ungroupSelection: () => void;
   alignSelection: (alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
@@ -80,6 +83,7 @@ interface CanvasState {
 }
 
 const MAX_PERSISTED_AVATAR_LENGTH = 350000;
+const getSnapSignature = (snap: Snap): string => JSON.stringify(snap);
 
 const defaultSnap: Snap = {
   version: '1.0.0',
@@ -150,6 +154,8 @@ export const useCanvasStore = create<CanvasState>()(
   persist(
     immer((set, get) => ({
       snap: defaultSnap,
+      activeCloudSnapId: null,
+      activeCloudSnapSignature: null,
       selectedElementIds: [],
       zoom: 0.5,
       showGrid: false,
@@ -167,6 +173,13 @@ export const useCanvasStore = create<CanvasState>()(
 
       setSnap: (snap) => set((state) => {
         state.snap = snap;
+        state.activeCloudSnapId = null;
+        state.activeCloudSnapSignature = null;
+      }),
+
+      setCloudSyncState: (id, snapToSync) => set((state) => {
+        state.activeCloudSnapId = id;
+        state.activeCloudSnapSignature = id ? getSnapSignature(snapToSync ?? state.snap) : null;
       }),
 
       updateMeta: (meta) => set((state) => {
@@ -392,6 +405,8 @@ export const useCanvasStore = create<CanvasState>()(
           ...defaultSnap,
           meta: { ...defaultSnap.meta, ...meta },
         };
+        state.activeCloudSnapId = null;
+        state.activeCloudSnapSignature = null;
         state.selectedElementIds = [];
         state.history = { past: [], future: [] };
       }),
@@ -400,11 +415,14 @@ export const useCanvasStore = create<CanvasState>()(
         return JSON.stringify(get().snap, null, 2);
       },
 
-      importSnap: (json) => {
+      importSnap: (json, options) => {
         try {
           const snap = JSON.parse(json) as Snap;
+          const cloudSnapId = options?.cloudSnapId ?? null;
           set((state) => {
             state.snap = snap;
+            state.activeCloudSnapId = cloudSnapId;
+            state.activeCloudSnapSignature = cloudSnapId ? getSnapSignature(snap) : null;
             state.selectedElementIds = [];
             state.history = { past: [], future: [] };
           });
@@ -701,7 +719,11 @@ export const useCanvasStore = create<CanvasState>()(
           snap.background.branding.avatarUrl = '';
           snap.background.branding.showAvatar = false;
         }
-        return { snap };
+        return {
+          snap,
+          activeCloudSnapId: state.activeCloudSnapId,
+          activeCloudSnapSignature: state.activeCloudSnapSignature,
+        };
       },
     }
   )

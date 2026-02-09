@@ -7,9 +7,11 @@ import { useRecentSnapsStore } from './store/recentSnapsStore';
 import { useAuthCleanup } from './hooks/useAuthCleanup';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+const LOCAL_MIGRATION_FLAG_PREFIX = 'yvcode-local-migration-v1:';
+
 function App() {
   const { initialize, loading, user } = useAuthStore();
-  const { migrateLocalSnaps, cloudSnaps } = useSyncStore();
+  const { migrateLocalSnaps } = useSyncStore();
   const { recentSnaps } = useRecentSnapsStore();
   const [migrationDone, setMigrationDone] = useState(false);
 
@@ -21,14 +23,44 @@ function App() {
     initialize();
   }, [initialize]);
 
+  // Load migration flag for the current authenticated user.
+  useEffect(() => {
+    if (!user) {
+      setMigrationDone(false);
+      return;
+    }
+
+    const migrationKey = `${LOCAL_MIGRATION_FLAG_PREFIX}${user.id}`;
+    const hasMigrated = window.localStorage.getItem(migrationKey) === '1';
+    setMigrationDone(hasMigrated);
+  }, [user]);
+
   // Auto-migrate local snaps on first login
   useEffect(() => {
-    if (user && !migrationDone && recentSnaps.length > 0 && cloudSnaps.length === 0) {
-      const snaps = recentSnaps.map(entry => entry.snap);
-      migrateLocalSnaps(snaps);
-      setMigrationDone(true);
+    if (!user || migrationDone || recentSnaps.length === 0) {
+      return;
     }
-  }, [user, recentSnaps, cloudSnaps, migrationDone, migrateLocalSnaps]);
+
+    let cancelled = false;
+
+    const runMigration = async () => {
+      const snaps = recentSnaps.map((entry) => entry.snap);
+      const result = await migrateLocalSnaps(snaps);
+      if (cancelled || result.error) {
+        return;
+      }
+
+      const migrationKey = `${LOCAL_MIGRATION_FLAG_PREFIX}${user.id}`;
+      window.localStorage.setItem(migrationKey, '1');
+      setMigrationDone(true);
+    };
+
+    runMigration();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, recentSnaps, migrationDone, migrateLocalSnaps]);
 
   if (loading) {
     return (
