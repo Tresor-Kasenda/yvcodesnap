@@ -145,7 +145,7 @@ const Toolbar: React.FC = () => {
     const rect = trigger.getBoundingClientRect();
     setMenuPos({
       left: rect.left + rect.width / 2 + window.scrollX,
-      top: rect.top + window.scrollY - 12, // place just above the button
+      top: rect.top + window.scrollY - 12,
     });
   }, []);
 
