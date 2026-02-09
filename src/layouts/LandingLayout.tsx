@@ -67,16 +67,6 @@ export default function LandingLayout() {
               <p className="text-neutral-600 dark:text-neutral-400 max-w-sm leading-relaxed mb-4">
                 The fastest way to create beautiful code screenshots for social media, documentation, and presentations.
               </p>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-sm font-medium">
-                  <Check className="w-3.5 h-3.5" />
-                  100% Free
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-sm font-medium">
-                  <Zap className="w-3.5 h-3.5" />
-                  No Sign-up
-                </span>
-              </div>
             </div>
 
             {/* Quick Links */}

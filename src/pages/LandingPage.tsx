@@ -68,6 +68,45 @@ const testimonials = [
     content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
     rating: 5,
   },
+  {
+    name: 'Elena',
+    role: 'Open Source Maintainer',
+    avatar: '👩‍🔬',
+    content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
+    rating: 5,
+  },
+
+  {
+    name: 'Rodriguez',
+    role: 'Open Source Maintainer',
+    avatar: '👩‍🔬',
+    content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
+    rating: 3.5,
+  },
+
+  {
+    name: 'Elena Rodriguez',
+    role: 'Open Source Maintainer',
+    avatar: '👩‍🔬',
+    content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
+    rating: 4.5,
+  },
+
+  {
+    name: 'Elen Rodriguez',
+    role: 'Open Source Maintainer',
+    avatar: '👩‍🔬',
+    content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
+    rating: 5,
+  },
+
+  {
+    name: 'Elena Rodrigue',
+    role: 'Open Source Maintainer',
+    avatar: '👩‍🔬',
+    content: "Beautiful code screenshots in seconds. The branding feature is perfect for documentation.",
+    rating: 4,
+  },
 ];
 
 // Users data - people using the app
@@ -203,15 +242,11 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
             >
               <motion.div
-                animate={{ y: [0, -4, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 text-sm font-medium text-blue-600 dark:text-blue-400 mb-8 backdrop-blur-sm"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>100% Free — No sign-up required</span>
                 <motion.span
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                   className="w-1.5 h-1.5 rounded-full bg-emerald-500"
                 />
               </motion.div>
@@ -265,13 +300,11 @@ export default function LandingPage() {
                 onClick={handleNewSnap}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-2xl font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-blue-500/30"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-2xl font-semibold text-lg transition-all"
               >
                 <Zap className="w-5 h-5" />
                 Start Creating — It's Free
                 <motion.div
-                  animate={{ x: [0, 4, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                   className="w-5 h-5 group-hover:translate-x-1"
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -281,7 +314,7 @@ export default function LandingPage() {
                 onClick={scrollToPricing}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-white/5 hover:bg-neutral-50 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-white rounded-2xl font-semibold text-lg transition-all hover:shadow-lg"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-white/5 hover:bg-neutral-50 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-white rounded-2xl font-semibold text-lg transition-all"
               >
                 <Layout className="w-5 h-5" />
                 View Pricing
@@ -338,24 +371,12 @@ export default function LandingPage() {
           </div>
 
           {/* Hero Visual - Video Presentation */}
-          <motion.div
+          <div
             className="mt-20 relative max-w-5xl mx-auto"
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-purple-500/20 blur-3xl rounded-3xl" />
-            <motion.div
-              className="relative bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-3xl p-2 shadow-2xl shadow-black/40 border border-white/10"
-              animate={{
-                y: [0, -8, 0],
-                rotateX: [0, 1, 0],
-              }}
-              transition={{
-                duration: 6,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
+            <div
+              className="relative bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-3xl p-2 border border-white/10"
               style={{
                 perspective: '1000px',
               }}
@@ -371,8 +392,8 @@ export default function LandingPage() {
                   loading="lazy"
                 />
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -602,7 +623,7 @@ export default function LandingPage() {
                         <Icon className="w-9 h-9" />
                       </div>
                       <motion.div
-                        className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-sm font-bold shadow-lg"
+                        className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white text-sm font-bold"
                         initial={{ scale: 0 }}
                         whileInView={{ scale: 1 }}
                         viewport={{ once: true }}
@@ -793,7 +814,7 @@ export default function LandingPage() {
                   onClick={() => setBillingCycle('monthly')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     billingCycle === 'monthly'
-                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white'
                       : 'text-neutral-500 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
@@ -804,7 +825,7 @@ export default function LandingPage() {
                   onClick={() => setBillingCycle('yearly')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     billingCycle === 'yearly'
-                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white'
                       : 'text-neutral-500 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
@@ -824,7 +845,7 @@ export default function LandingPage() {
                 key={index}
                 className={`relative bg-white dark:bg-white/5 border rounded-2xl p-8 transition-all duration-300 ${
                   plan.popular
-                    ? 'border-blue-500 dark:border-blue-500/50 shadow-xl shadow-blue-500/10'
+                    ? 'border-blue-500 dark:border-blue-500/50'
                     : 'border-neutral-200 dark:border-white/10'
                 }`}
                 variants={fadeInUp}
@@ -835,7 +856,7 @@ export default function LandingPage() {
               >
                 {plan.popular && (
                   <motion.div
-                    className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-sm font-semibold rounded-full shadow-lg"
+                    className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-sm font-semibold rounded-full"
                     initial={{ opacity: 0, y: -20, scale: 0.8 }}
                     whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: true }}
@@ -917,7 +938,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.97 }}
                   className={`w-full py-3 px-6 rounded-xl font-semibold transition-all ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30'
+                      ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white'
                       : 'bg-neutral-100 dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/20 text-neutral-900 dark:text-white'
                   }`}
                 >
