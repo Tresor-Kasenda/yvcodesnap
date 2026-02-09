@@ -155,8 +155,9 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
   };
 
   // Modern arrow head calculations
-  const pointerLength = props.head === 'none' ? 0 : Math.max(props.thickness * 3, 12);
-  const pointerWidth = props.head === 'none' ? 0 : Math.max(props.thickness * 2.5, 12);
+  const headRadius = props.radius ?? 12;
+  const pointerLength = props.head === 'none' ? 0 : Math.max(headRadius, props.thickness * 2, 8);
+  const pointerWidth = props.head === 'none' ? 0 : Math.max(headRadius * 0.85, props.thickness * 1.8, 8);
 
   // Calculate label position
   const labelPosition = props.labelPosition ?? 0.5;
@@ -283,7 +284,7 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
       {props.label && (
         <Text
           x={labelPoint.x}
-          y={labelPoint.y - 20}
+          y={labelPoint.y - (20 + (props.padding ?? 0))}
           text={props.label}
           fontSize={14}
           fill={props.color}

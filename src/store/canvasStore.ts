@@ -799,6 +799,8 @@ export const createArrowElement = (x: number, y: number): ArrowElement => ({
     style: 'straight',
     color: '#60a5fa',
     thickness: 3,
+    radius: 12,
+    padding: 0,
     head: 'filled',
   },
 });
@@ -818,6 +820,8 @@ export const createShapeElement = (kind: ShapeKind, x: number, y: number): Shape
     kind,
     stroke: '#60a5fa',
     strokeWidth: 3,
+    cornerRadius: kind === 'rectangle' ? 6 : 0,
+    padding: 0,
     fill: kind === 'rectangle' || kind === 'ellipse' ? '#60a5f4' : 'transparent',
     sides: kind === 'polygon' ? 5 : kind === 'star' ? 5 : undefined,
   },

@@ -22,6 +22,30 @@ export default function Editor() {
 
     const { commands } = useAppCommands();
 
+    // Keep the editor in a single scroll context: the page itself should not scroll.
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        const classesToClear = ['landing-scrollbar', 'auth-scrollbar', 'auth-no-scroll'];
+
+        classesToClear.forEach((className) => {
+            html.classList.remove(className);
+            body.classList.remove(className);
+        });
+
+        html.classList.add('editor-scrollbar');
+        body.classList.add('editor-scrollbar');
+        html.classList.add('editor-no-scroll');
+        body.classList.add('editor-no-scroll');
+
+        return () => {
+            html.classList.remove('editor-scrollbar');
+            body.classList.remove('editor-scrollbar');
+            html.classList.remove('editor-no-scroll');
+            body.classList.remove('editor-no-scroll');
+        };
+    }, []);
+
     // Handle going back to main screen
     const handleGoToMainScreen = useCallback(() => {
         if (snap.elements.length > 0) {
@@ -117,7 +141,7 @@ export default function Editor() {
     }, []);
 
     return (
-        <div className="h-screen flex flex-col bg-white dark:bg-[#09090b] text-neutral-900 dark:text-white">
+        <div className="h-screen md:h-dvh flex flex-col overflow-hidden bg-white dark:bg-[#09090b] text-neutral-900 dark:text-white">
             <FontLoader />
             <Toaster position="top-center" toastOptions={{ duration: 2600 }} />
             <TopBar
@@ -128,7 +152,7 @@ export default function Editor() {
                 showLayersPanel={showLayersPanel}
                 showInspector={showInspector}
             />
-            <div className="flex-1 flex overflow-hidden relative">
+            <div className="flex-1 min-h-0 flex overflow-hidden relative">
                 {/* Layers Panel - Collapsible on mobile */}
                 <div className={`
                     absolute md:relative z-30 h-full

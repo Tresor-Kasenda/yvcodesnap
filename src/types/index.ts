@@ -104,6 +104,8 @@ export interface ArrowProps {
   style: 'straight' | 'curved';
   color: string;
   thickness: number;
+  radius?: number;
+  padding?: number;
   head: 'filled' | 'outline' | 'none';
   controlPoints?: { x: number; y: number }[]; // For curved arrows - bezier control points
   label?: string; // Optional text label
@@ -149,6 +151,8 @@ export interface ShapeProps {
   kind: ShapeKind;
   stroke: string;
   strokeWidth: number;
+  cornerRadius?: number;
+  padding?: number;
   fill?: string;
   sides?: number; // for polygon/star
 }

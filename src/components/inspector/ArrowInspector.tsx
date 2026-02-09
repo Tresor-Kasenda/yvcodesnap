@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { ArrowElement } from '../../types';
 import SliderField from '../ui/SliderField';
@@ -8,8 +8,21 @@ interface ArrowInspectorProps {
   element: ArrowElement;
 }
 
+const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-2';
+const INPUT_CLASS =
+  'w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none';
+const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-sm focus:outline-none font-mono';
+const SEGMENT_BUTTON_BASE = 'flex-1 py-2 rounded-md text-[10px] font-medium transition-all';
+const SEGMENT_BUTTON_ACTIVE = 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm';
+const SEGMENT_BUTTON_IDLE = 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5';
+
+const clampMin = (value: number, fallback: number, min: number) => {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(min, value);
+};
+
 const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
-  const { updateElement } = useCanvasStore();
+  const { updateElement, saveToHistory } = useCanvasStore();
 
   const update = (updates: Partial<ArrowElement>) => {
     updateElement(element.id, updates);
@@ -22,47 +35,92 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
   const start = element.points[0];
   const end = element.points[element.points.length - 1];
 
-  const updateStart = (coord: 'x' | 'y', value: number) => {
-    const delta = coord === 'x' ? value - start.x : value - start.y;
-    const newPoints = element.points.map((p) => ({
-      x: p.x + (coord === 'x' ? delta : 0),
-      y: p.y + (coord === 'y' ? delta : 0),
+  const bounds = useMemo(() => ({
+    x: Math.min(start.x, end.x),
+    y: Math.min(start.y, end.y),
+    width: Math.abs(end.x - start.x),
+    height: Math.abs(end.y - start.y),
+  }), [start.x, start.y, end.x, end.y]);
+
+  const shiftArrow = (dx: number, dy: number) => {
+    const nextPoints = element.points.map((point) => ({
+      x: point.x + dx,
+      y: point.y + dy,
     }));
-    update({ points: newPoints });
+
+    const nextControlPoints = element.props.controlPoints?.map((point) => ({
+      x: point.x + dx,
+      y: point.y + dy,
+    }));
+
+    update({
+      points: nextPoints,
+      props: nextControlPoints
+        ? { ...element.props, controlPoints: nextControlPoints }
+        : element.props,
+    });
+  };
+
+  const updateStart = (coord: 'x' | 'y', value: number) => {
+    const safe = Number.isFinite(value) ? value : start[coord];
+    const delta = safe - start[coord];
+    shiftArrow(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
   };
 
   const updateEnd = (coord: 'x' | 'y', value: number) => {
-    const newPoints = [...element.points];
-    newPoints[newPoints.length - 1] = {
-      x: coord === 'x' ? value : end.x,
-      y: coord === 'y' ? value : end.y,
+    const safe = Number.isFinite(value) ? value : end[coord];
+    const nextPoints = [...element.points];
+    nextPoints[nextPoints.length - 1] = {
+      x: coord === 'x' ? safe : end.x,
+      y: coord === 'y' ? safe : end.y,
     };
-    update({ points: newPoints });
+    update({ points: nextPoints });
+  };
+
+  const updateBoundsPosition = (coord: 'x' | 'y', value: number) => {
+    const current = coord === 'x' ? bounds.x : bounds.y;
+    const safe = Number.isFinite(value) ? value : current;
+    const delta = safe - current;
+    shiftArrow(coord === 'x' ? delta : 0, coord === 'y' ? delta : 0);
+  };
+
+  const updateBoundsSize = (axis: 'width' | 'height', value: number) => {
+    const safe = clampMin(value, axis === 'width' ? bounds.width : bounds.height, 1);
+    const nextPoints = [...element.points];
+    const nextEnd = { ...end };
+
+    if (axis === 'width') {
+      const direction = end.x - start.x >= 0 ? 1 : -1;
+      nextEnd.x = start.x + direction * safe;
+    } else {
+      const direction = end.y - start.y >= 0 ? 1 : -1;
+      nextEnd.y = start.y + direction * safe;
+    }
+
+    nextPoints[nextPoints.length - 1] = nextEnd;
+    update({ points: nextPoints });
   };
 
   const addControlPoint = () => {
-    const start = element.points[0];
-    const end = element.points[element.points.length - 1];
     const currentControlPoints = element.props.controlPoints || [];
-    
+
     if (currentControlPoints.length < 2) {
       const midX = (start.x + end.x) / 2;
       const midY = (start.y + end.y) / 2;
       const dx = end.x - start.x;
       const dy = end.y - start.y;
-      
-      const newPoint = currentControlPoints.length === 0
+
+      const nextPoint = currentControlPoints.length === 0
         ? { x: midX - dy * 0.3, y: midY + dx * 0.3 }
         : { x: midX + dy * 0.3, y: midY - dx * 0.3 };
-      
-      updateProps({ controlPoints: [...currentControlPoints, newPoint] });
+
+      updateProps({ controlPoints: [...currentControlPoints, nextPoint] });
     }
   };
 
   const removeControlPoint = (index: number) => {
     const currentControlPoints = element.props.controlPoints || [];
-    const newControlPoints = currentControlPoints.filter((_, i) => i !== index);
-    updateProps({ controlPoints: newControlPoints });
+    updateProps({ controlPoints: currentControlPoints.filter((_, i) => i !== index) });
   };
 
   const resetControlPoints = () => {
@@ -71,102 +129,142 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
 
   return (
     <div className="space-y-4">
-      {/* Position */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-1">Start X</label>
-          <input
-            type="number"
-          value={Math.round(start.x)}
-          onChange={(e) => updateStart('x', Number(e.target.value))}
-          className="w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none"
-        />
-      </div>
       <div>
-        <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-1">Start Y</label>
-        <input
-          type="number"
-          value={Math.round(start.y)}
-          onChange={(e) => updateStart('y', Number(e.target.value))}
-          className="w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none"
-        />
-      </div>
-        <div>
-          <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-1">End X</label>
-          <input
-            type="number"
-            value={Math.round(end.x)}
-            onChange={(e) => updateEnd('x', Number(e.target.value))}
-            className="w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-1">End Y</label>
-          <input
-            type="number"
-            value={Math.round(end.y)}
-            onChange={(e) => updateEnd('y', Number(e.target.value))}
-            className="w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none"
-          />
+        <label className={LABEL_CLASS}>Geometry</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={LABEL_CLASS}>X</label>
+            <input
+              type="number"
+              value={Math.round(bounds.x)}
+              onChange={(e) => updateBoundsPosition('x', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Y</label>
+            <input
+              type="number"
+              value={Math.round(bounds.y)}
+              onChange={(e) => updateBoundsPosition('y', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>W</label>
+            <input
+              type="number"
+              value={Math.round(bounds.width)}
+              onChange={(e) => updateBoundsSize('width', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>H</label>
+            <input
+              type="number"
+              value={Math.round(bounds.height)}
+              onChange={(e) => updateBoundsSize('height', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Style */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Style</label>
+        <label className={LABEL_CLASS}>Endpoints</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={LABEL_CLASS}>Start X</label>
+            <input
+              type="number"
+              value={Math.round(start.x)}
+              onChange={(e) => updateStart('x', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Start Y</label>
+            <input
+              type="number"
+              value={Math.round(start.y)}
+              onChange={(e) => updateStart('y', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>End X</label>
+            <input
+              type="number"
+              value={Math.round(end.x)}
+              onChange={(e) => updateEnd('x', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>End Y</label>
+            <input
+              type="number"
+              value={Math.round(end.y)}
+              onChange={(e) => updateEnd('y', Number(e.target.value))}
+              onBlur={saveToHistory}
+              className={INPUT_CLASS}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label className={LABEL_CLASS}>Style</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
           <button
             onClick={() => updateProps({ style: 'straight' })}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-              element.props.style === 'straight'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
+            className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'straight' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
           >
             Straight
           </button>
           <button
             onClick={() => updateProps({ style: 'curved' })}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-              element.props.style === 'curved'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
+            className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'curved' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
           >
             Curved
           </button>
         </div>
       </div>
 
-      {/* Control points for curved arrows */}
       {element.props.style === 'curved' && (
         <div>
-          <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">
-            Control Points ({(element.props.controlPoints || []).length}/2)
-          </label>
+          <label className={LABEL_CLASS}>Control Points ({(element.props.controlPoints || []).length}/2)</label>
           <div className="space-y-2">
             <div className="flex gap-2">
               <button
                 onClick={addControlPoint}
                 disabled={(element.props.controlPoints || []).length >= 2}
-                className="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 py-2 px-3 rounded-lg text-[10px] font-medium bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 + Add Point
               </button>
               <button
                 onClick={resetControlPoints}
                 disabled={(element.props.controlPoints || []).length === 0}
-                className="py-2 px-3 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="py-2 px-3 rounded-lg text-[10px] font-medium bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Reset
               </button>
             </div>
             {(element.props.controlPoints || []).length > 0 && (
               <div className="space-y-1">
-                {(element.props.controlPoints || []).map((cp, index) => (
+                {(element.props.controlPoints || []).map((controlPoint, index) => (
                   <div key={index} className="flex items-center justify-between py-1.5 px-2 bg-neutral-100 dark:bg-white/5 rounded-md">
-                    <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Point {index + 1}: ({Math.round(cp.x)}, {Math.round(cp.y)})
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400">
+                      Point {index + 1}: ({Math.round(controlPoint.x)}, {Math.round(controlPoint.y)})
                     </span>
                     <button
                       onClick={() => removeControlPoint(index)}
@@ -180,116 +278,120 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
                 ))}
               </div>
             )}
-            <p className="text-xs text-neutral-500 dark:text-neutral-500">
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-500">
               Drag the blue handles on the canvas to adjust the curve shape.
             </p>
           </div>
         </div>
       )}
 
-      {/* Color */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Color</label>
+        <label className={LABEL_CLASS}>Color</label>
         <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
           <AccessibleColorPicker
             value={element.props.color}
             onChange={(color) => updateProps({ color })}
             ariaLabel="Arrow color"
+            className="h-7 w-7"
           />
           <input
             type="text"
             value={element.props.color}
             onChange={(e) => updateProps({ color: e.target.value })}
-            className="flex-1 bg-transparent text-neutral-900 dark:text-white text-sm focus:outline-none font-mono"
+            className={COLOR_INPUT_CLASS}
           />
         </div>
       </div>
 
-      {/* Thickness */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">
-          Thickness: {element.props.thickness}px
-        </label>
+        <label className={LABEL_CLASS}>Thickness: {element.props.thickness}px</label>
         <SliderField
           min={1}
           max={12}
           step={1}
           value={element.props.thickness}
-          onValueChange={(v) => updateProps({ thickness: v })}
+          onValueChange={(value) => updateProps({ thickness: value })}
           ariaLabel="Arrow thickness"
         />
       </div>
 
-      {/* Arrow head */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Arrow Head</label>
+        <label className={LABEL_CLASS}>Radius: {Math.round(element.props.radius ?? 12)}px</label>
+        <SliderField
+          min={8}
+          max={48}
+          step={1}
+          value={element.props.radius ?? 12}
+          onValueChange={(value) => updateProps({ radius: value })}
+          ariaLabel="Arrow head radius"
+        />
+      </div>
+
+      <div>
+        <label className={LABEL_CLASS}>Padding: {Math.round(element.props.padding ?? 0)}px</label>
+        <SliderField
+          min={0}
+          max={40}
+          step={1}
+          value={element.props.padding ?? 0}
+          onValueChange={(value) => updateProps({ padding: value })}
+          ariaLabel="Arrow label padding"
+        />
+      </div>
+
+      <div>
+        <label className={LABEL_CLASS}>Arrow Head</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
           <button
             onClick={() => updateProps({ head: 'filled' })}
-            className={`flex-1 py-2 rounded-md text-xs font-medium transition-all ${
-              element.props.head === 'filled'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
+            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'filled' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
           >
             Filled
           </button>
           <button
             onClick={() => updateProps({ head: 'outline' })}
-            className={`flex-1 py-2 rounded-md text-xs font-medium transition-all ${
-              element.props.head === 'outline'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
+            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'outline' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
           >
             Outline
           </button>
           <button
             onClick={() => updateProps({ head: 'none' })}
-            className={`flex-1 py-2 rounded-md text-xs font-medium transition-all ${
-              element.props.head === 'none'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
+            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'none' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
           >
             None
           </button>
         </div>
       </div>
 
-      {/* Label */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Label (Optional)</label>
+        <label className={LABEL_CLASS}>Label</label>
         <input
           type="text"
           value={element.props.label || ''}
           onChange={(e) => updateProps({ label: e.target.value || undefined })}
+          onBlur={saveToHistory}
           placeholder="Add a label..."
-          className="w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+          className={INPUT_CLASS}
         />
       </div>
 
-      {/* Label position */}
       {element.props.label && (
         <div>
-          <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">
-            Label Position: {Math.round((element.props.labelPosition || 0.5) * 100)}%
-          </label>
+          <label className={LABEL_CLASS}>Label Position: {Math.round((element.props.labelPosition || 0.5) * 100)}%</label>
           <SliderField
             min={0}
             max={100}
             step={1}
             value={(element.props.labelPosition || 0.5) * 100}
-            onValueChange={(v) => updateProps({ labelPosition: v / 100 })}
-            ariaLabel="Label position"
+            onValueChange={(value) => updateProps({ labelPosition: value / 100 })}
+            ariaLabel="Arrow label position"
           />
         </div>
       )}
 
-      {/* Points info */}
       <div className="pt-2 border-t border-neutral-200 dark:border-white/5">
-        <p className="text-xs text-neutral-500 dark:text-neutral-500">
-          Drag the white handles on the canvas to move the arrow endpoints.
+        <p className="text-[10px] text-neutral-500 dark:text-neutral-500">
+          Drag the white handles on the canvas to move arrow endpoints.
         </p>
       </div>
     </div>

@@ -14,6 +14,9 @@ interface ShapeProps {
 const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, draggable }) => {
   const { props, width, height } = element;
   const strokeWidth = props.strokeWidth ?? 2;
+  const padding = Math.max(0, props.padding ?? 0);
+  const innerWidth = Math.max(1, Math.abs(width) - padding * 2);
+  const innerHeight = Math.max(1, Math.abs(height) - padding * 2);
   const outlineColor = '#3b82f6';
 
   const selectedOutlineForPolyLike = (node: React.ReactNode) =>
@@ -61,7 +64,17 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
   };
 
   if (props.kind === 'line' && element.points && element.points.length >= 2) {
-    const pts = element.points.flatMap((p) => [p.x, p.y]);
+    const start = element.points[0];
+    const end = element.points[element.points.length - 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    const effectivePadding = length > 0 ? Math.min(padding, length / 2 - 0.5) : 0;
+    const startX = effectivePadding > 0 ? start.x + (dx / length) * effectivePadding : start.x;
+    const startY = effectivePadding > 0 ? start.y + (dy / length) * effectivePadding : start.y;
+    const endX = effectivePadding > 0 ? end.x - (dx / length) * effectivePadding : end.x;
+    const endY = effectivePadding > 0 ? end.y - (dy / length) * effectivePadding : end.y;
+    const pts = [startX, startY, endX, endY];
     return (
       <Group {...common}>
         {isSelected && (
@@ -90,16 +103,20 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
   if (props.kind === 'rectangle') {
     const cx = element.x + width / 2;
     const cy = element.y + height / 2;
+    const cornerRadius = Math.max(
+      0,
+      Math.min(props.cornerRadius ?? 6, innerWidth / 2, innerHeight / 2)
+    );
     return (
       <Group {...common}>
         {isSelected && (
           <Rect
             x={cx}
             y={cy}
-            offsetX={(width + 8) / 2}
-            offsetY={(height + 8) / 2}
-            width={width + 8}
-            height={height + 8}
+            offsetX={(innerWidth + 8) / 2}
+            offsetY={(innerHeight + 8) / 2}
+            width={innerWidth + 8}
+            height={innerHeight + 8}
             cornerRadius={8}
             stroke={outlineColor}
             strokeWidth={1.5}
@@ -111,14 +128,14 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
         <Rect
           x={cx}
           y={cy}
-          offsetX={width / 2}
-          offsetY={height / 2}
-          width={width}
-          height={height}
+          offsetX={innerWidth / 2}
+          offsetY={innerHeight / 2}
+          width={innerWidth}
+          height={innerHeight}
           fill={props.fill || 'transparent'}
           stroke={props.stroke}
           strokeWidth={strokeWidth}
-          cornerRadius={6}
+          cornerRadius={cornerRadius}
           rotation={element.rotation}
           listening={true}
         />
@@ -135,8 +152,8 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
           <Ellipse
             x={cx}
             y={cy}
-            radiusX={Math.abs(width) / 2 + 4}
-            radiusY={Math.abs(height) / 2 + 4}
+            radiusX={innerWidth / 2 + 4}
+            radiusY={innerHeight / 2 + 4}
             stroke={outlineColor}
             strokeWidth={1.5}
             dash={[6, 4]}
@@ -146,8 +163,8 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
         <Ellipse
           x={cx}
           y={cy}
-          radiusX={Math.abs(width) / 2}
-          radiusY={Math.abs(height) / 2}
+          radiusX={innerWidth / 2}
+          radiusY={innerHeight / 2}
           fill={props.fill || 'transparent'}
           stroke={props.stroke}
           strokeWidth={strokeWidth}
@@ -160,7 +177,7 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
 
   if (props.kind === 'polygon') {
     const sides = props.sides || 5;
-    const radius = Math.min(Math.abs(width), Math.abs(height)) / 2;
+    const radius = Math.min(innerWidth, innerHeight) / 2;
     const cx = element.x + width / 2;
     const cy = element.y + height / 2;
     return (
@@ -194,7 +211,7 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
 
   if (props.kind === 'star') {
     const points = props.sides || 5;
-    const outerRadius = Math.min(Math.abs(width), Math.abs(height)) / 2;
+    const outerRadius = Math.min(innerWidth, innerHeight) / 2;
     const cx = element.x + width / 2;
     const cy = element.y + height / 2;
     return (
