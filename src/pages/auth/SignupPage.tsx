@@ -52,7 +52,10 @@ export default function SignupPage() {
     clearFeedback();
     setLoading(true);
     try {
-      await signInWithOAuth(provider);
+      const result = await signInWithOAuth(provider);
+      if (result.error) {
+        setError(result.error);
+      }
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,7 @@ export default function SignupPage() {
       footer={
         <p>
           {authPageCopy.signup.helperPrimary}{' '}
-          <Link to="/auth/login" onClick={clearFeedback} className={authSecondaryLinkClass}>
+          <Link to="/login" onClick={clearFeedback} className={authSecondaryLinkClass}>
             {authPageCopy.signup.helperPrimaryCta}
           </Link>
         </p>

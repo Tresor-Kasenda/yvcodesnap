@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { User, LogOut, Crown } from 'lucide-react';
 import UpgradeModal from '../UpgradeModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function UserMenu() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,12 @@ export default function UserMenu() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsOpen(false);
+    navigate('/login', { replace: true });
+  };
 
   if (!user) return null;
 
@@ -62,7 +70,7 @@ export default function UserMenu() {
           )}
 
           <button
-            onClick={() => { signOut(); setIsOpen(false); }}
+            onClick={handleSignOut}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-none hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left border-t border-neutral-200 dark:border-neutral-800 transition-colors"
           >
             <LogOut className="w-4 h-4" />

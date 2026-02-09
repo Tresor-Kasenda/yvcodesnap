@@ -18,7 +18,7 @@ export default function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
   const handleStart = () => {
-    navigate('/auth/login');
+    navigate('/login');
   };
 
   const scrollToPricing = () => {

@@ -8,7 +8,7 @@ export default function LandingLayout() {
   const currentYear = new Date().getFullYear();
 
   const handleNewSnap = () => {
-    navigate('/auth/login');
+    navigate('/login');
   };
 
   useEffect(() => {

@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
       footer={
         <p>
           {authPageCopy.forgotPassword.helperPrimary}{' '}
-          <Link to="/auth/login" onClick={clearFeedback} className={authSecondaryLinkClass}>
+          <Link to="/login" onClick={clearFeedback} className={authSecondaryLinkClass}>
             {authPageCopy.forgotPassword.helperPrimaryCta}
           </Link>
         </p>

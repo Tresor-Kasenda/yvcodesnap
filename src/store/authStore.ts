@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import type { User, Subscription } from '../types';
 import type { Session } from '@supabase/supabase-js';
 
+let authChangeSubscription: { unsubscribe: () => void } | null = null;
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -13,12 +15,15 @@ interface AuthState {
   initialize: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signInWithOAuth: (provider: 'google' | 'github') => Promise<void>;
+  signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error?: string }>;
   signInWithMagicLink: (email: string) => Promise<{ error?: string }>;
   requestPasswordReset: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   fetchSubscription: () => Promise<void>;
 }
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : 'Unexpected authentication error';
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -43,12 +48,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Listen to auth changes
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        set({ user: (session?.user as User) ?? null, session });
-        if (session) {
-          await get().fetchSubscription();
-        }
-      });
+      if (!authChangeSubscription) {
+        const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+          set({ user: (nextSession?.user as User) ?? null, session: nextSession });
+          if (nextSession) {
+            await get().fetchSubscription();
+          }
+        });
+        authChangeSubscription = data.subscription;
+      }
     } catch (error) {
       console.error('Auth initialization error:', error);
       set({ loading: false });
@@ -61,17 +69,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/editor`,
         },
       });
 
       if (error) return { error: error.message };
-      if (data.user) {
+      // Supabase can return a user without session when email confirmation is required.
+      if (data.user && data.session) {
         set({ user: data.user as User, session: data.session });
       }
       return {};
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
     }
   },
 
@@ -85,18 +94,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) return { error: error.message };
       set({ user: data.user as User, session: data.session });
       return {};
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
     }
   },
 
   signInWithOAuth: async (provider) => {
-    await supabase.auth.signInWithOAuth({
-      provider: provider as any,
-      options: {
-        redirectTo: `${window.location.origin}/editor`,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/editor`,
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return {};
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
+    }
   },
 
   signInWithMagicLink: async (email) => {
@@ -110,21 +129,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) return { error: error.message };
       return {};
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
     }
   },
 
   requestPasswordReset: async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/login`,
+        redirectTo: `${window.location.origin}/login`,
       });
 
       if (error) return { error: error.message };
       return {};
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
     }
   },
 

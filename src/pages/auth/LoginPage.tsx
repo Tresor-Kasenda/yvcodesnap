@@ -55,7 +55,10 @@ export default function LoginPage() {
     clearFeedback();
     setLoading(true);
     try {
-      await signInWithOAuth(provider);
+      const result = await signInWithOAuth(provider);
+      if (result.error) {
+        setError(result.error);
+      }
     } finally {
       setLoading(false);
     }

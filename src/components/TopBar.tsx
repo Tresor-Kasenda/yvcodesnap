@@ -28,8 +28,6 @@ const TopBar: React.FC<TopBarProps> = ({
   onGoHome,
   onToggleLayers,
   onToggleInspector,
-  showLayersPanel: _showLayersPanel,
-  showInspector: _showInspector
 }) => {
   const navigate = useNavigate();
   const [showRecentSnaps, setShowRecentSnaps] = useState(false);
@@ -217,7 +215,7 @@ const TopBar: React.FC<TopBarProps> = ({
   const handleSaveToCloud = useCallback(async () => {
     if (!user) {
       setShowExportMenu(false);
-      navigate('/auth/login');
+      navigate('/login');
       return;
     }
 
@@ -259,8 +257,9 @@ const TopBar: React.FC<TopBarProps> = ({
 
   useEffect(() => {
     const handleGlobalCopy = () => handleCopyImage();
-    window.addEventListener('copy-canvas-image' as any, handleGlobalCopy);
-    return () => window.removeEventListener('copy-canvas-image' as any, handleGlobalCopy);
+    const copyCanvasImageEvent = 'copy-canvas-image';
+    window.addEventListener(copyCanvasImageEvent, handleGlobalCopy as EventListener);
+    return () => window.removeEventListener(copyCanvasImageEvent, handleGlobalCopy as EventListener);
   }, [handleCopyImage]);
 
   const toggleRecentSnaps = useCallback(() => {
@@ -412,7 +411,7 @@ const TopBar: React.FC<TopBarProps> = ({
               </>
             ) : (
               <button
-                onClick={() => navigate('/auth/login')}
+                onClick={() => navigate('/login')}
                 className="hidden sm:flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
               >
                 Sign In
