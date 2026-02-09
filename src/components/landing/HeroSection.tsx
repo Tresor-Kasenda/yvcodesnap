@@ -42,7 +42,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
               variants={fadeInUp}
               className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-600 dark:from-white dark:via-white dark:to-white/60 bg-clip-text text-transparent"
             >
-              Turn code snippets into
+              Turn your ideas into
             </motion.span>
             <br />
             <motion.span
@@ -59,8 +59,8 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' }}
           >
-            Launch social posts, docs, and tutorials faster with assets that look premium from the first export.
-            <span className="text-neutral-900 dark:text-white font-medium"> Start free now, upgrade to Pro when you need brand scale and 4K output.</span>
+            Launch social posts, presentations, docs, and tutorials faster with visuals that look premium from the first export.
+            <span className="text-neutral-900 dark:text-white font-medium"> Start free now, then upgrade to Pro when you need brand scale and advanced exports.</span>
           </motion.p>
 
           <motion.div

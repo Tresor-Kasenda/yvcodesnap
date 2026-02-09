@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authCommonCopy, authPageCopy } from '../../content/auth';
@@ -9,6 +9,7 @@ import { authPrimaryButtonClass, authSecondaryLinkClass } from './styles';
 import AuthLayout from './AuthLayout';
 
 export default function SignupPage() {
+  const navigate = useNavigate();
   const { signUp, signInWithOAuth, signInWithMagicLink } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +32,12 @@ export default function SignupPage() {
     if (result.error) {
       setError(result.error);
     } else {
-      setMessage(authCommonCopy.signupSuccess);
+      const { user, hasCompletedOnboarding } = useAuthStore.getState();
+      if (user) {
+        navigate(hasCompletedOnboarding ? '/editor' : '/onboarding');
+      } else {
+        setMessage(authCommonCopy.signupSuccess);
+      }
     }
     setLoading(false);
   };

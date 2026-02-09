@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { User, Subscription } from '../types';
+import type { OnboardingPreferences, User, Subscription } from '../types';
 import type { Session } from '@supabase/supabase-js';
 
 let authChangeSubscription: { unsubscribe: () => void } | null = null;
 
-interface AuthState {
+export interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  hasCompletedOnboarding: boolean;
   subscription: Subscription;
 
   // Actions
@@ -16,8 +17,8 @@ interface AuthState {
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error?: string }>;
-  signInWithMagicLink: (email: string) => Promise<{ error?: string }>;
   requestPasswordReset: (email: string) => Promise<{ error?: string }>;
+  completeOnboarding: (preferences: OnboardingPreferences) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   fetchSubscription: () => Promise<void>;
 }
@@ -25,10 +26,14 @@ interface AuthState {
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Unexpected authentication error';
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+const getOnboardingStatus = (user: User | null | undefined) =>
+  user?.user_metadata?.onboarding_completed === true;
+
+export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   session: null,
   loading: true,
+  hasCompletedOnboarding: false,
   subscription: {
     tier: 'free',
     snap_limit: 2,
@@ -41,16 +46,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
-        set({ user: session.user as User, session, loading: false });
+        const nextUser = session.user as User;
+        set({
+          user: nextUser,
+          session,
+          loading: false,
+          hasCompletedOnboarding: getOnboardingStatus(nextUser),
+        });
         await get().fetchSubscription();
       } else {
-        set({ loading: false });
+        set({ loading: false, hasCompletedOnboarding: false });
       }
 
       // Listen to auth changes
       if (!authChangeSubscription) {
         const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-          set({ user: (nextSession?.user as User) ?? null, session: nextSession });
+          const nextUser = (nextSession?.user as User) ?? null;
+          set({
+            user: nextUser,
+            session: nextSession,
+            hasCompletedOnboarding: getOnboardingStatus(nextUser),
+          });
           if (nextSession) {
             await get().fetchSubscription();
           }
@@ -76,7 +92,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) return { error: error.message };
       // Supabase can return a user without session when email confirmation is required.
       if (data.user && data.session) {
-        set({ user: data.user as User, session: data.session });
+        const nextUser = data.user as User;
+        set({
+          user: nextUser,
+          session: data.session,
+          hasCompletedOnboarding: getOnboardingStatus(nextUser),
+        });
       }
       return {};
     } catch (error: unknown) {
@@ -92,7 +113,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) return { error: error.message };
-      set({ user: data.user as User, session: data.session });
+      const nextUser = data.user as User;
+      set({
+        user: nextUser,
+        session: data.session,
+        hasCompletedOnboarding: getOnboardingStatus(nextUser),
+      });
       return {};
     } catch (error: unknown) {
       return { error: getErrorMessage(error) };
@@ -118,22 +144,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signInWithMagicLink: async (email) => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/editor`,
-        },
-      });
-
-      if (error) return { error: error.message };
-      return {};
-    } catch (error: unknown) {
-      return { error: getErrorMessage(error) };
-    }
-  },
-
   requestPasswordReset: async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -147,9 +157,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  completeOnboarding: async (preferences) => {
+    const currentUser = get().user;
+    if (!currentUser) {
+      return { error: 'Not authenticated' };
+    }
+
+    const completedAt = new Date().toISOString();
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          onboarding_completed: true,
+          onboarding_completed_at: completedAt,
+          onboarding_preferences: preferences,
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      const updatedUser = ((data.user as User | null) ?? {
+        ...currentUser,
+        user_metadata: {
+          ...(currentUser.user_metadata ?? {}),
+          onboarding_completed: true,
+          onboarding_completed_at: completedAt,
+          onboarding_preferences: preferences,
+        },
+      }) as User;
+
+      set({
+        user: updatedUser,
+        hasCompletedOnboarding: true,
+      });
+
+      return {};
+    } catch (error: unknown) {
+      return { error: getErrorMessage(error) };
+    }
+  },
+
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, session: null });
+    set({ user: null, session: null, hasCompletedOnboarding: false });
   },
 
   fetchSubscription: async () => {

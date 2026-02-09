@@ -29,13 +29,13 @@ export function FeaturesSection() {
             className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-br from-neutral-900 to-neutral-600 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent"
             variants={fadeInUp}
           >
-            Everything you need to publish high-performing code content
+            Everything you need to publish high-performing visual content
           </motion.h2>
           <motion.p
             className="text-xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto"
             variants={fadeInUp}
           >
-            Every feature is designed to reduce production time and increase the visual quality of your posts.
+            Every feature is designed to reduce production time and increase the quality of your content.
           </motion.p>
         </div>
 

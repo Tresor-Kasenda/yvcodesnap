@@ -23,19 +23,19 @@ export function HowItWorksSection() {
             }}
           >
             <Zap className="w-4 h-4" />
-            <span>Fast onboarding</span>
+            <span>Simple workflow</span>
           </motion.div>
           <motion.h2
             className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-br from-neutral-900 to-neutral-600 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent"
             variants={fadeInUp}
           >
-            Go from raw snippet to publish-ready in 3 steps
+            Go from draft to publish-ready in 3 steps
           </motion.h2>
           <motion.p
             className="text-xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto"
             variants={fadeInUp}
           >
-            Start for free in minutes, then unlock Pro when you need advanced export quality and brand presets.
+            Start for free in minutes, then unlock Pro when you need advanced export quality and deeper brand control.
           </motion.p>
         </div>
 

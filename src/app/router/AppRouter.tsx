@@ -5,8 +5,10 @@ import Editor from '../../pages/Editor';
 import AuthPage from '../../pages/auth/AuthPage';
 import ForgotPasswordPage from '../../pages/auth/ForgotPasswordPage';
 import LoginPage from '../../pages/auth/LoginPage';
+import OnboardingPage from '../../pages/auth/OnboardingPage';
 import SignupPage from '../../pages/auth/SignupPage';
 import RequireAuth from './RequireAuth';
+import RequireOnboarding from './RequireOnboarding';
 
 export default function AppRouter() {
   return (
@@ -20,10 +22,20 @@ export default function AppRouter() {
       <Route path="/auth/signup" element={<SignupPage />} />
       <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
       <Route
+        path="/onboarding"
+        element={(
+          <RequireAuth>
+            <OnboardingPage />
+          </RequireAuth>
+        )}
+      />
+      <Route
         path="/editor"
         element={(
           <RequireAuth>
-            <Editor />
+            <RequireOnboarding>
+              <Editor />
+            </RequireOnboarding>
           </RequireAuth>
         )}
       />

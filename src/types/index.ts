@@ -306,11 +306,31 @@ export const GOOGLE_FONTS = [
 ];
 
 // Auth and Cloud Types
+export type OnboardingUseCase = 'social-content' | 'marketing-campaigns' | 'education-training' | 'internal-communication';
+export type OnboardingExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+export type OnboardingPrimaryFormat = 'social-posts' | 'presentations' | 'tutorials' | 'documents' | 'ads' | 'mixed';
+export type OnboardingPlanIntent = 'free' | 'pro-trial' | 'team';
+
+export interface OnboardingPreferences {
+  useCase: OnboardingUseCase;
+  experienceLevel: OnboardingExperienceLevel;
+  primaryFormat: OnboardingPrimaryFormat;
+  planIntent: OnboardingPlanIntent;
+}
+
+export interface UserMetadata {
+  onboarding_completed?: boolean;
+  onboarding_completed_at?: string;
+  onboarding_preferences?: OnboardingPreferences;
+  [key: string]: unknown;
+}
+
 export interface User {
   id: string;
   email: string;
   created_at: string;
   subscription_tier?: 'free' | 'pro';
+  user_metadata?: UserMetadata;
 }
 
 export interface CloudSnap {

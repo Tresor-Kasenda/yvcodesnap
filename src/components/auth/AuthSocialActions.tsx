@@ -1,14 +1,11 @@
-import { Mail } from 'lucide-react';
 import { authCommonCopy } from '../../content/auth';
 
 type AuthSocialActionsProps = {
   loading: boolean;
-  email: string;
   onOAuth: (provider: 'google' | 'github') => void;
-  onMagicLink: () => void;
 };
 
-export function AuthSocialActions({ loading, email, onOAuth, onMagicLink }: AuthSocialActionsProps) {
+export function AuthSocialActions({ loading, onOAuth }: AuthSocialActionsProps) {
   return (
     <>
       <div className="my-5 flex items-center gap-3">
@@ -46,15 +43,6 @@ export function AuthSocialActions({ loading, email, onOAuth, onMagicLink }: Auth
               </g>
           </svg>
           <span>{authCommonCopy.oauthGithub}</span>
-        </button>
-        <button
-          type="button"
-          onClick={onMagicLink}
-          disabled={loading || !email}
-          className="w-full inline-flex items-center justify-center gap-2.5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-60"
-        >
-          <Mail className="w-5 h-5 text-gray-900" />
-          <span>{authCommonCopy.magicLink}</span>
         </button>
       </div>
     </>

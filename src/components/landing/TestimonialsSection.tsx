@@ -36,13 +36,13 @@ export function TestimonialsSection() {
             className="text-3xl md:text-4xl font-semibold text-neutral-900 dark:text-white"
             variants={fadeInUp}
           >
-            Results developers can feel in their weekly workflow
+            Results teams can feel in their weekly workflow
           </motion.h2>
           <motion.p
             className="mt-6 text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto"
             variants={fadeInUp}
           >
-            Better output quality, less editing time, and faster publishing across docs and social channels.
+            Better visual quality, less editing time, and faster publishing across channels.
           </motion.p>
         </div>
 

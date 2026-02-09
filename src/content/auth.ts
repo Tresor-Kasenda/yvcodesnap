@@ -16,7 +16,7 @@ export const authCommonCopy = {
 export const authPageCopy = {
   login: {
     title: 'Welcome back',
-    subtitle: 'Sign in to continue creating conversion-ready code visuals.',
+    subtitle: 'Sign in to continue creating visuals that engage your audience.',
     submit: 'Sign in',
     helperPrimary: 'No account yet?',
     helperPrimaryCta: 'Create one',
@@ -25,7 +25,7 @@ export const authPageCopy = {
   },
   signup: {
     title: 'Create your account',
-    subtitle: 'Start for free and ship your first visuals in minutes.',
+    subtitle: 'Start free and publish your first professional visual in minutes.',
     submit: 'Create account',
     helperPrimary: 'Already have an account?',
     helperPrimaryCta: 'Sign in',

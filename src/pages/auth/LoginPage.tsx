@@ -10,7 +10,7 @@ import AuthLayout from './AuthLayout';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signInWithOAuth, signInWithMagicLink } = useAuthStore();
+  const { signIn, signInWithOAuth } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,19 +36,8 @@ export default function LoginPage() {
     }
 
     setLoading(false);
-    navigate('/editor');
-  };
-
-  const handleMagicLink = async () => {
-    clearFeedback();
-    setLoading(true);
-    const result = await signInWithMagicLink(email);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setMessage(authCommonCopy.magicLinkSuccess);
-    }
-    setLoading(false);
+    const nextPath = useAuthStore.getState().hasCompletedOnboarding ? '/editor' : '/onboarding';
+    navigate(nextPath);
   };
 
   const handleOAuth = async (provider: 'google' | 'github') => {
@@ -131,9 +120,7 @@ export default function LoginPage() {
 
       <AuthSocialActions
         loading={loading}
-        email={email}
         onOAuth={handleOAuth}
-        onMagicLink={handleMagicLink}
       />
     </AuthLayout>
   );

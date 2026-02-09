@@ -51,13 +51,13 @@ export function FinalCtaSection({ onStart, onViewPricing }: FinalCtaSectionProps
               className="text-4xl md:text-5xl font-bold text-white mb-4"
               variants={fadeInUp}
             >
-              Ready to publish your next code post today?
+              Ready to publish your next visual today?
             </motion.h2>
             <motion.p
               className="text-xl text-white/80 mb-8 max-w-2xl mx-auto"
               variants={fadeInUp}
             >
-              Start on Free to test your workflow. Move to Pro when you want premium branding, higher export quality, and faster weekly production.
+              Start on Free to test your workflow. Move to Pro when you want stronger branding, higher export quality, and faster weekly production.
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center"
