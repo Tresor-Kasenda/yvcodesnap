@@ -1,4 +1,5 @@
 import { Code, Palette, Layers, MousePointer2, Download, Share2, Upload, Wand2, Image } from 'lucide-react';
+import { trustedCompanies } from '../../content/product';
 
 export type Testimonial = {
   name: string;
@@ -27,7 +28,7 @@ export const users = [
   { name: 'David', avatar: 'https://i.pravatar.cc/150?img=11' },
 ];
 
-export const trustedBy = ['Vercel', 'Stripe', 'GitHub', 'Notion', 'Shopify', 'Airbnb'];
+export const trustedBy = trustedCompanies;
 
 export const features = [
   {

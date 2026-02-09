@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { KeyRound, Mail, Eye } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { authCommonCopy, authPageCopy } from '../../content/auth';
+import { AuthFeedback, AuthSocialActions, AuthTextField } from '../../components/auth';
+import { authPrimaryButtonClass, authSecondaryLinkClass } from './styles';
 import AuthLayout from './AuthLayout';
 
 export default function LoginPage() {
@@ -10,6 +13,7 @@ export default function LoginPage() {
   const { signIn, signInWithOAuth, signInWithMagicLink } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -42,7 +46,7 @@ export default function LoginPage() {
     if (result.error) {
       setError(result.error);
     } else {
-      setMessage('Lien magique envoye. Verifie ta boite mail.');
+      setMessage(authCommonCopy.magicLinkSuccess);
     }
     setLoading(false);
   };
@@ -50,119 +54,84 @@ export default function LoginPage() {
   const handleOAuth = async (provider: 'google' | 'github') => {
     clearFeedback();
     setLoading(true);
-    await signInWithOAuth(provider);
+    try {
+      await signInWithOAuth(provider);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthLayout
-      title="Authentication"
-      subtitle="Connecte-toi pour commencer a creer."
+      title={authPageCopy.login.title}
+      subtitle={authPageCopy.login.subtitle}
       footer={
         <>
           <p>
-            Pas encore de compte ?{' '}
-            <Link to="/auth/signup" onClick={clearFeedback} className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
-              Inscription
+            {authPageCopy.login.helperPrimary}{' '}
+            <Link to="/auth/signup" onClick={clearFeedback} className={authSecondaryLinkClass}>
+              {authPageCopy.login.helperPrimaryCta}
             </Link>
           </p>
           <p>
-            Mot de passe perdu ?{' '}
-            <Link to="/auth/forgot-password" onClick={clearFeedback} className="text-blue-600 dark:text-blue-400 hover:underline">
-              Reinitialiser
+            {authPageCopy.login.helperSecondary}{' '}
+            <Link to="/auth/forgot-password" onClick={clearFeedback} className={authSecondaryLinkClass}>
+              {authPageCopy.login.helperSecondaryCta}
             </Link>
           </p>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="email">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              placeholder="user@yves.com"
-              className="w-full pl-10 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          placeholder={authCommonCopy.emailPlaceholder}
+          label={authCommonCopy.emailLabel}
+          icon={Mail}
+        />
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium" htmlFor="password">
-            Mot de passe
-          </label>
-          <div className="relative">
-            <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={6}
-              className="w-full pl-10 pr-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+        <AuthTextField
+          id="password"
+          type={showPassword ? 'text' : 'password'}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          minLength={6}
+          autoComplete="current-password"
+          placeholder={authCommonCopy.passwordPlaceholder}
+          label={authCommonCopy.passwordLabel}
+          icon={KeyRound}
+          rightSlot={
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="p-1.5 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          }
+        />
 
-        {error && (
-          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
-        {message && (
-          <p className="text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-3 py-2">
-            {message}
-          </p>
-        )}
+        {error && <AuthFeedback type="error" message={error} />}
+        {message && <AuthFeedback type="success" message={message} />}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-60"
-        >
-          {loading ? 'Chargement...' : 'Se connecter'}
+        <button type="submit" disabled={loading} className={authPrimaryButtonClass}>
+          {loading ? authCommonCopy.loading : authPageCopy.login.submit}
         </button>
       </form>
 
-      <div className="my-5 flex items-center gap-3">
-        <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
-        <span className="text-xs text-neutral-500">ou</span>
-        <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
-      </div>
-
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => handleOAuth('google')}
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-60"
-        >
-          Continuer avec Google
-        </button>
-        <button
-          type="button"
-          onClick={() => handleOAuth('github')}
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-60"
-        >
-          Continuer avec GitHub
-        </button>
-        <button
-          type="button"
-          onClick={handleMagicLink}
-          disabled={loading || !email}
-          className="w-full py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-60"
-        >
-          Se connecter avec un lien magique
-        </button>
-      </div>
+      <AuthSocialActions
+        loading={loading}
+        email={email}
+        onOAuth={handleOAuth}
+        onMagicLink={handleMagicLink}
+      />
     </AuthLayout>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { Zap, Play } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { productBrand } from '../content/product';
 
 export default function LandingLayout() {
   const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
 
   const handleNewSnap = () => {
     navigate('/auth/login');
@@ -39,7 +40,7 @@ export default function LandingLayout() {
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
               <Zap className="w-5 h-5 text-white" fill="currentColor" />
             </div>
-            <span className="font-bold text-xl tracking-tight">YvCode</span>
+            <span className="font-bold text-xl tracking-tight">{productBrand.name}</span>
           </a>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -55,7 +56,7 @@ export default function LandingLayout() {
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5"
             >
               <Play className="w-4 h-4" fill="currentColor" />
-              Start Creating
+              {productBrand.navPrimaryCta}
             </button>
           </div>
         </div>
@@ -76,10 +77,10 @@ export default function LandingLayout() {
                 <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
                   <Zap className="w-5 h-5 text-white" fill="currentColor" />
                 </div>
-                <span className="font-bold text-xl tracking-tight">YvCode</span>
+                <span className="font-bold text-xl tracking-tight">{productBrand.name}</span>
               </div>
               <p className="text-neutral-600 dark:text-neutral-400 max-w-sm leading-relaxed mb-4">
-                The fastest way to create beautiful code screenshots for social media, documentation, and presentations.
+                {productBrand.shortDescription}
               </p>
             </div>
 
@@ -107,7 +108,7 @@ export default function LandingLayout() {
 
           <div className="pt-8 border-t border-neutral-200 dark:border-white/8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-neutral-500 dark:text-neutral-600">
-              © 2026 YvCode. Made with ❤️ for developers.
+              © {currentYear} {productBrand.name}. {productBrand.footerTagline}
             </p>
             <div className="flex items-center gap-6">
               <a href="#" className="text-sm text-neutral-500 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-white transition-colors">Privacy Policy</a>

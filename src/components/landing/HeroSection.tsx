@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CountUp } from '../animations/CountUp';
 import { fadeInUp } from '../../utils/animationVariants';
 import { users } from './data';
+import { conversionHighlights, productBrand } from '../../content/product';
 
 type HeroSectionProps = {
   onStart: () => void;
@@ -75,7 +76,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-2xl font-semibold text-lg transition-all"
             >
               <Zap className="w-5 h-5" />
-              Try YvCode Free
+              {productBrand.heroPrimaryCta}
               <span className="w-5 h-5 group-hover:translate-x-1 transition-transform">
                 <ArrowRight className="w-5 h-5" />
               </span>
@@ -87,7 +88,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white dark:bg-white/5 hover:bg-neutral-50 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-white rounded-2xl font-semibold text-lg transition-all"
             >
               <Layout className="w-5 h-5" />
-              Compare Free vs Pro
+              {productBrand.heroSecondaryCta}
             </motion.button>
           </motion.div>
 
@@ -97,7 +98,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55, ease: 'easeOut' }}
           >
-            {['First export in under 60 seconds', 'No install required', 'Upgrade only when needed'].map((item) => (
+            {conversionHighlights.map((item) => (
               <span
                 key={item}
                 className="px-3 py-1 text-sm rounded-full bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-white/5 dark:text-neutral-200 dark:border-white/10"
@@ -140,7 +141,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
                 }}
                 className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-white dark:border-neutral-900 bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-lg"
               >
-                +<CountUp value={2000} />
+                +<CountUp value={productBrand.socialProofCount} />
               </motion.div>
             </div>
             <motion.p
@@ -149,7 +150,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1, duration: 0.4 }}
             >
-              Trusted by <span className="font-semibold text-neutral-700 dark:text-white"><CountUp value={2000} /></span> developers shipping code content every week
+              Trusted by <span className="font-semibold text-neutral-700 dark:text-white"><CountUp value={productBrand.socialProofCount} /></span> {productBrand.socialProofText}
             </motion.p>
           </motion.div>
         </div>
@@ -164,7 +165,7 @@ export function HeroSection({ onStart, onViewPricing }: HeroSectionProps) {
               <iframe
                 className="w-full h-full"
                 src="https://www.youtube-nocookie.com/embed/D7__t7uShNw?rel=0&modestbranding=1"
-                title="YvCode Demo"
+                title={productBrand.demoTitle}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 loading="lazy"

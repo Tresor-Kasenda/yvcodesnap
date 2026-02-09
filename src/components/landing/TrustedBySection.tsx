@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { trustedBy } from './data';
+import { productBrand } from '../../content/product';
 
 export function TrustedBySection() {
   return (
@@ -25,7 +26,7 @@ export function TrustedBySection() {
             visible: { opacity: 1, y: 0 },
           }}
         >
-          Teams and creators building with YvCode
+          {productBrand.trustedByTitle}
         </motion.p>
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
           {trustedBy.map((company, index) => (
