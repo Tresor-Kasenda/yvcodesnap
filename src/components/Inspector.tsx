@@ -132,7 +132,7 @@ const Inspector: React.FC = () => {
 
   return (
     <div
-      className="relative shrink-0 h-full bg-white dark:bg-[#09090b] border-l border-neutral-200 dark:border-white/5 transition-[width] duration-150 ease-out w-full md:w-auto"
+      className="relative shrink-0 h-full overflow-x-hidden bg-white dark:bg-[#09090b] border-l border-neutral-200 dark:border-white/5 transition-[width] duration-150 ease-out w-full md:w-auto"
       style={{ width: isMobile ? '100vw' : width, maxWidth: isMobile ? '100vw' : MAX_WIDTH }}
     >
       {!isMobile && (
@@ -147,7 +147,7 @@ const Inspector: React.FC = () => {
           <div className="mx-auto mt-1 h-full w-0.5 rounded-full bg-neutral-200 dark:bg-white/5 transition-all group-hover:bg-neutral-400 dark:group-hover:bg-white/20" />
         </div>
       )}
-      <div className="p-4 sm:p-6 overflow-y-auto h-full">
+      <div className="p-4 sm:p-6 h-full overflow-y-auto overflow-x-hidden inspector-scrollbar">
         {selectedElement ? (
           <div className="space-y-4">
             {/* Header with Title and Element Actions */}
@@ -202,7 +202,7 @@ const Inspector: React.FC = () => {
               </button>
             </div>
 
-            <div className="h-px bg-neutral-200 dark:bg-white/5 w-full -mx-2" />
+            <div className="h-px bg-neutral-200 dark:bg-white/5 w-full" />
 
             {/* Element-specific inspector */}
             <div className="inspector-content">

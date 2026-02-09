@@ -2,6 +2,7 @@ import React from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { ArrowElement } from '../../types';
 import SliderField from '../ui/SliderField';
+import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 
 interface ArrowInspectorProps {
   element: ArrowElement;
@@ -190,14 +191,11 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
       <div>
         <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Color</label>
         <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <div className="w-8 h-8 rounded overflow-hidden relative border border-neutral-300 dark:border-white/10 shrink-0">
-            <input
-              type="color"
-              value={element.props.color}
-              onChange={(e) => updateProps({ color: e.target.value })}
-              className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-            />
-          </div>
+          <AccessibleColorPicker
+            value={element.props.color}
+            onChange={(color) => updateProps({ color })}
+            ariaLabel="Arrow color"
+          />
           <input
             type="text"
             value={element.props.color}

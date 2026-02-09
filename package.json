@@ -24,6 +24,7 @@
     "konva": "^10.0.12",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
+    "react-aria-components": "^1.15.1",
     "react-dom": "^19.2.0",
     "react-konva": "^19.2.1",
     "react-konva-utils": "^2.0.0",

@@ -4,6 +4,7 @@ import { FONT_FAMILIES } from '../../types';
 import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import SliderField from '../ui/SliderField';
+import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 
 const GRADIENT_PRESETS = [
   { from: '#101022', to: '#1f1f3a', name: 'Midnight' },
@@ -55,14 +56,11 @@ const BackgroundPanel: React.FC = () => {
         <div>
           <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Color</label>
           <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-             <div className="w-8 h-8 rounded overflow-hidden relative border border-white/10 shrink-0">
-               <input
-                type="color"
-                value={background.solid.color}
-                onChange={(e) => setBackground({ solid: { color: e.target.value } })}
-                className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-              />
-            </div>
+            <AccessibleColorPicker
+              value={background.solid.color}
+              onChange={(color) => setBackground({ solid: { color } })}
+              ariaLabel="Background solid color"
+            />
             <input
               type="text"
               value={background.solid.color}
@@ -96,16 +94,13 @@ const BackgroundPanel: React.FC = () => {
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">From</label>
               <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                 <div className="w-8 h-8 rounded overflow-hidden relative border border-white/10 shrink-0">
-                    <input
-                    type="color"
-                    value={background.gradient.from}
-                    onChange={(e) => setBackground({
-                      gradient: { ...background.gradient, from: e.target.value }
-                    })}
-                    className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-                  />
-                 </div>
+                <AccessibleColorPicker
+                  value={background.gradient.from}
+                  onChange={(color) => setBackground({
+                    gradient: { ...background.gradient, from: color },
+                  })}
+                  ariaLabel="Gradient start color"
+                />
                  <input
                     type="text"
                     value={background.gradient.from}
@@ -119,21 +114,18 @@ const BackgroundPanel: React.FC = () => {
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">To</label>
                <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                 <div className="w-8 h-8 rounded overflow-hidden relative border border-white/10 shrink-0">
-                    <input
-                    type="color"
+                 <AccessibleColorPicker
                     value={background.gradient.to}
-                    onChange={(e) => setBackground({
-                      gradient: { ...background.gradient, from: e.target.value }
+                    onChange={(color) => setBackground({
+                      gradient: { ...background.gradient, to: color },
                     })}
-                    className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-                    />
-                 </div>
+                    ariaLabel="Gradient end color"
+                  />
                  <input
                     type="text"
                     value={background.gradient.to}
                     onChange={(e) => setBackground({
-                      gradient: { ...background.gradient, from: e.target.value }
+                      gradient: { ...background.gradient, to: e.target.value }
                     })}
                     className="w-full bg-transparent text-neutral-900 dark:text-white text-[10px] focus:outline-none font-mono"
                   />
@@ -236,16 +228,13 @@ const BackgroundPanel: React.FC = () => {
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Strip Color</label>
               <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                <div className="w-8 h-8 rounded overflow-hidden relative border border-white/10 shrink-0">
-                  <input
-                    type="color"
-                    value={background.brandStrip.color || '#000000'}
-                    onChange={(e) => setBackground({
-                      brandStrip: { ...background.brandStrip, color: e.target.value }
-                    })}
-                    className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-                  />
-                </div>
+                <AccessibleColorPicker
+                  value={background.brandStrip.color || '#000000'}
+                  onChange={(color) => setBackground({
+                    brandStrip: { ...background.brandStrip, color },
+                  })}
+                  ariaLabel="Brand strip color"
+                />
                 <input
                   type="text"
                   value={background.brandStrip.color || '#000000'}
@@ -275,16 +264,13 @@ const BackgroundPanel: React.FC = () => {
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Text Color</label>
             <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                <div className="w-8 h-8 rounded overflow-hidden relative border border-white/10 shrink-0">
-                  <input
-                    type="color"
-                    value={background.brandStrip.textColor || '#ffffff'}
-                    onChange={(e) => setBackground({
-                      brandStrip: { ...background.brandStrip, textColor: e.target.value }
-                    })}
-                    className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-                  />
-                </div>
+                <AccessibleColorPicker
+                  value={background.brandStrip.textColor || '#ffffff'}
+                  onChange={(color) => setBackground({
+                    brandStrip: { ...background.brandStrip, textColor: color },
+                  })}
+                  ariaLabel="Brand strip text color"
+                />
                 <input
                   type="text"
                   value={background.brandStrip.textColor || '#ffffff'}

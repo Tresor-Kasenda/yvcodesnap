@@ -3,39 +3,7 @@ import { useCanvasStore } from '../../store/canvasStore';
 import type { ShapeElement } from '../../types';
 import SliderField from '../ui/SliderField';
 import ToggleSwitch from '../ui/ToggleSwitch';
-
-// HTML color inputs only accept hex (#rrggbb). Convert any rgba/shortcut value to a safe hex.
-const toHexColor = (color?: string) => {
-  if (!color || color === 'transparent') return '#000000';
-  if (color.startsWith('#')) {
-    if (color.length === 4) {
-      // #rgb -> #rrggbb
-      return (
-        '#' +
-        color
-          .slice(1)
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      );
-    }
-    // #rrggbbaa -> drop alpha for the picker
-    if (color.length === 9) return '#' + color.slice(1, 7);
-    return color.slice(0, 7);
-  }
-
-  const match = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-  if (match) {
-    const [r, g, b] = match.slice(1, 4).map((n) => {
-      const v = Number(n);
-      return Math.max(0, Math.min(255, v));
-    });
-    const hex = (v: number) => v.toString(16).padStart(2, '0');
-    return `#${hex(r)}${hex(g)}${hex(b)}`;
-  }
-
-  return '#000000';
-};
+import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 
 const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
   const { updateElement, saveToHistory } = useCanvasStore();
@@ -138,14 +106,12 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
       <div>
         <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Stroke</label>
         <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <div className="w-7 h-7 rounded overflow-hidden relative border border-neutral-300 dark:border-white/10 shrink-0">
-            <input
-              type="color"
-              value={props.stroke}
-              onChange={(e) => updateProps({ stroke: e.target.value })}
-              className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-            />
-          </div>
+          <AccessibleColorPicker
+            value={props.stroke}
+            onChange={(color) => updateProps({ stroke: color })}
+            ariaLabel="Shape stroke color"
+            className="h-7 w-7"
+          />
           <input
             type="text"
             value={props.stroke}
@@ -183,14 +149,12 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
             />
           </div>
           <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-            <div className="w-7 h-7 rounded overflow-hidden relative border border-neutral-300 dark:border-white/10 shrink-0">
-              <input
-                type="color"
-                value={toHexColor(props.fill && props.fill !== 'transparent' ? props.fill : '#60a5f4')}
-                onChange={(e) => updateProps({ fill: e.target.value })}
-                className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-              />
-            </div>
+            <AccessibleColorPicker
+              value={props.fill && props.fill !== 'transparent' ? props.fill : '#60a5f4'}
+              onChange={(color) => updateProps({ fill: color })}
+              ariaLabel="Shape fill color"
+              className="h-7 w-7"
+            />
             <input
               type="text"
               value={props.fill && props.fill !== 'transparent' ? props.fill : 'transparent'}

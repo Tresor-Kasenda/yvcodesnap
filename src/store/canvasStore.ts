@@ -277,9 +277,6 @@ export const useCanvasStore = create<CanvasState>()(
 
       setTool: (tool) => set((state) => {
         state.tool = tool;
-        if (tool !== 'select') {
-          state.selectedElementIds = [];
-        }
       }),
 
       moveElementUp: (id) => set((state) => {

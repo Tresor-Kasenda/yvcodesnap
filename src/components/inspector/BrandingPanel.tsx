@@ -6,6 +6,7 @@ import { SocialIcon } from '../elements/SocialIcons';
 import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import SliderField from '../ui/SliderField';
+import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 
 import { ArrowUpLeft, ArrowUpRight, ArrowDownLeft, ArrowDownRight } from 'lucide-react';
 
@@ -431,14 +432,12 @@ const BrandingPanel: React.FC = () => {
             <div className="mb-4">
               <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">Color</label>
               <div className="flex gap-2 items-center p-2 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                <div className="w-6 h-6 rounded overflow-hidden relative border border-white/10 shrink-0">
-                  <input
-                    type="color"
-                    value={preferences.color}
-                    onChange={(e) => handleUpdatePreferences({ color: e.target.value })}
-                    className="color-input absolute inset-[-2px] w-[calc(100%+4px)] h-[calc(100%+4px)]"
-                  />
-                </div>
+                <AccessibleColorPicker
+                  value={preferences.color}
+                  onChange={(color) => handleUpdatePreferences({ color })}
+                  ariaLabel="Branding color"
+                  className="h-6 w-6"
+                />
                 <input
                   type="text"
                   value={preferences.color}

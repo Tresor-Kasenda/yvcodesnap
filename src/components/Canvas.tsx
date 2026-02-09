@@ -332,7 +332,7 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
     });
   };
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (isPanning || cancelClickRef.current || resizeState || e.evt.button !== 0) {
+    if (cancelClickRef.current || resizeState || spacePressedRef.current || e.evt.button !== 0) {
       cancelClickRef.current = false;
       return;
     }
