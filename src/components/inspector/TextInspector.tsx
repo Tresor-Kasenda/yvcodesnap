@@ -7,13 +7,23 @@ import SliderField from '../ui/SliderField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
+import PositionControls from './PositionControls';
+import {
+  createElementPositionUpdate,
+  getElementBoundsForPosition,
+  getHorizontalPosition,
+  getVerticalPosition,
+} from './positionUtils';
 
 interface TextInspectorProps {
   element: TextElement;
 }
 
 const TextInspector: React.FC<TextInspectorProps> = ({ element }) => {
-  const { updateElement, saveToHistory } = useCanvasStore();
+  const { snap, updateElement, saveToHistory } = useCanvasStore();
+  const bounds = getElementBoundsForPosition(element);
+  const horizontalPosition = getHorizontalPosition(bounds, snap.meta.width);
+  const verticalPosition = getVerticalPosition(bounds, snap.meta.height);
 
   const update = (updates: Partial<TextElement>) => {
     updateElement(element.id, updates);
@@ -67,6 +77,19 @@ const TextInspector: React.FC<TextInspectorProps> = ({ element }) => {
           ))}
         </div>
       </div>
+
+      <PositionControls
+        horizontal={horizontalPosition}
+        vertical={verticalPosition}
+        onHorizontalChange={(horizontal) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { horizontal });
+          if (updates) updateElement(element.id, updates);
+        }}
+        onVerticalChange={(vertical) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { vertical });
+          if (updates) updateElement(element.id, updates);
+        }}
+      />
 
       {/* Font size */}
       <div>

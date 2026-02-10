@@ -5,13 +5,23 @@ import NumberField from '../ui/NumberField';
 import SliderField from '../ui/SliderField';
 import SelectField from '../ui/SelectField';
 import HoverTooltip from '../ui/HoverTooltip';
+import PositionControls from './PositionControls';
+import {
+    createElementPositionUpdate,
+    getElementBoundsForPosition,
+    getHorizontalPosition,
+    getVerticalPosition,
+} from './positionUtils';
 
 interface ImageInspectorProps {
     element: ImageElement;
 }
 
 const ImageInspector: React.FC<ImageInspectorProps> = ({ element }) => {
-    const { updateElement } = useCanvasStore();
+    const { snap, updateElement } = useCanvasStore();
+    const bounds = getElementBoundsForPosition(element);
+    const horizontalPosition = getHorizontalPosition(bounds, snap.meta.width);
+    const verticalPosition = getVerticalPosition(bounds, snap.meta.height);
 
     const updateProps = (props: Partial<ImageElement['props']>) => {
         updateElement(element.id, { props: { ...element.props, ...props } });
@@ -38,6 +48,19 @@ const ImageInspector: React.FC<ImageInspectorProps> = ({ element }) => {
                     </HoverTooltip>
                 </div>
             </div>
+
+            <PositionControls
+                horizontal={horizontalPosition}
+                vertical={verticalPosition}
+                onHorizontalChange={(horizontal) => {
+                    const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { horizontal });
+                    if (updates) updateElement(element.id, updates);
+                }}
+                onVerticalChange={(vertical) => {
+                    const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { vertical });
+                    if (updates) updateElement(element.id, updates);
+                }}
+            />
 
             {/* Opacity */}
             <div>

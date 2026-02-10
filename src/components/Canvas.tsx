@@ -536,53 +536,76 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
     const blockHeight = Math.max(contentHeight, hasAvatar ? avatarSize : 0);
 
     // Calculate position based on setting
+    const [verticalRaw = 'bottom', horizontalRaw = 'right'] = (branding.position || 'bottom-right').split('-');
+    const verticalPosition = verticalRaw === 'top' || verticalRaw === 'middle' || verticalRaw === 'bottom'
+      ? verticalRaw
+      : 'bottom';
+    const horizontalPosition = horizontalRaw === 'left' || horizontalRaw === 'center' || horizontalRaw === 'right'
+      ? horizontalRaw
+      : 'right';
+
     let x = padding;
     let y = padding;
-    let align: 'left' | 'right' = 'left';
+    let align: 'left' | 'center' | 'right' = 'left';
 
-    switch (branding.position) {
-      case 'top-left':
-        x = padding;
-        y = padding;
-        align = 'left';
-        break;
-      case 'top-right':
-        x = width - padding;
-        y = padding;
-        align = 'right';
-        break;
-      case 'bottom-left':
-        x = padding;
-        y = height - padding - blockHeight;
-        align = 'left';
-        break;
-      case 'bottom-right':
-        x = width - padding;
-        y = height - padding - blockHeight;
-        align = 'right';
-        break;
+    if (horizontalPosition === 'left') {
+      x = padding;
+      align = 'left';
+    } else if (horizontalPosition === 'center') {
+      x = width / 2;
+      align = 'center';
+    } else {
+      x = width - padding;
+      align = 'right';
+    }
+
+    if (verticalPosition === 'top') {
+      y = padding;
+    } else if (verticalPosition === 'middle') {
+      y = (height - blockHeight) / 2;
+    } else {
+      y = height - padding - blockHeight;
     }
 
     const totalHeight = blockHeight;
     const contentTop = contentHeight > 0 ? y + (totalHeight - contentHeight) / 2 : y;
     const avatarY = hasAvatar ? y + (totalHeight - avatarSize) / 2 : 0;
-    const avatarCenterX = align === 'right' ? x - avatarSize / 2 : x + avatarSize / 2;
+    const avatarOffset = hasAvatar ? avatarSize + avatarGap : 0;
+    const avatarCenterX = align === 'right'
+      ? x - avatarSize / 2
+      : align === 'center'
+        ? x - avatarOffset / 2
+        : x + avatarSize / 2;
     const avatarCenterY = avatarY + avatarSize / 2;
     const avatarPatternScale = hasAvatar && brandingAvatar && brandingAvatar.width && brandingAvatar.height
       ? Math.max(avatarSize / brandingAvatar.width, avatarSize / brandingAvatar.height)
       : 1;
 
-    const avatarOffset = hasAvatar ? avatarSize + avatarGap : 0;
-    const textStartXBase = align === 'right' ? x - avatarOffset : x + avatarOffset;
-    const textX = align === 'right' ? 0 : textStartXBase;
+    const textStartXBase = align === 'right'
+      ? x - avatarOffset
+      : align === 'center'
+        ? x + avatarOffset / 2
+        : x + avatarOffset;
+    const textX = align === 'right'
+      ? 0
+      : align === 'center'
+        ? padding + avatarOffset / 2
+        : textStartXBase;
     const textWidth = align === 'right'
       ? Math.max(textStartXBase, 0)
-      : Math.max(width - padding - textStartXBase, 0);
+      : align === 'center'
+        ? Math.max(width - padding * 2 - avatarOffset, 0)
+        : Math.max(width - padding - textStartXBase, 0);
 
     // Calculate icon positions
     const iconScale = iconSize / 24; // SVG viewBox is 24x24
     const socialStartY = contentTop + textHeight + (hasTextContent ? 16 : 0);
-    const anchorX = textStartXBase;
+    const anchorX = align === 'center' ? x + avatarOffset / 2 : textStartXBase;
+    const horizontalItemWidths = activeSocialPlatforms.map(
+      (platform) => iconSize + iconTextGap + platform.value.length * fontSize * 0.5
+    );
+    const totalHorizontalSocialWidth = horizontalItemWidths.reduce((sum, itemWidth) => sum + itemWidth, 0)
+      + Math.max(0, activeSocialPlatforms.length - 1) * iconGap;
 
     return (
       <Group opacity={branding.opacity || 0.8}>
@@ -628,16 +651,25 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
 
           if (socialLayout === 'vertical') {
             itemY = socialStartY + index * (socialItemHeight + iconGap - 4);
-            itemX = anchorX;
+            if (align === 'right') {
+              itemX = anchorX;
+            } else if (align === 'center') {
+              itemX = anchorX - horizontalItemWidths[index] / 2;
+            } else {
+              itemX = anchorX;
+            }
           } else {
             itemY = socialStartY;
-            // For horizontal layout, we need to calculate cumulative width
-            // This is simplified - for perfect alignment we'd need to measure text
-            const prevItemsWidth = activeSocialPlatforms.slice(0, index).reduce((acc, p) => {
-              const textWidthEstimate = (p.value.length * fontSize * 0.5); // Approximate text width
-              return acc + iconSize + iconTextGap + textWidthEstimate + iconGap;
-            }, 0);
-            itemX = align === 'right' ? anchorX - prevItemsWidth : anchorX + prevItemsWidth;
+            const prevItemsWidth = horizontalItemWidths
+              .slice(0, index)
+              .reduce((sum, itemWidth) => sum + itemWidth, 0) + index * iconGap;
+            if (align === 'right') {
+              itemX = anchorX - prevItemsWidth;
+            } else if (align === 'center') {
+              itemX = anchorX - totalHorizontalSocialWidth / 2 + prevItemsWidth;
+            } else {
+              itemX = anchorX + prevItemsWidth;
+            }
           }
 
           // Icon vertical centering within item

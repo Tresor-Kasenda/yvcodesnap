@@ -17,7 +17,16 @@ interface BrandingInfo {
 
 interface BrandingPreferences {
   enabled: boolean;
-  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  position:
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'middle-left'
+    | 'middle-center'
+    | 'middle-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   showName: boolean;
   showWebsite: boolean;
   showSocial: boolean;

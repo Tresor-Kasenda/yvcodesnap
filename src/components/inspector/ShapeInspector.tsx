@@ -6,6 +6,13 @@ import NumberField from '../ui/NumberField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
+import PositionControls from './PositionControls';
+import {
+  createElementPositionUpdate,
+  getElementBoundsForPosition,
+  getHorizontalPosition,
+  getVerticalPosition,
+} from './positionUtils';
 
 const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-1.5';
 const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-[11px] focus:outline-none font-mono';
@@ -20,6 +27,7 @@ const clampMin = (value: number, fallback: number, min: number) => {
 };
 
 const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
+  const snap = useCanvasStore((state) => state.snap);
   const updateElement = useCanvasStore((state) => state.updateElement);
   const saveToHistory = useCanvasStore((state) => state.saveToHistory);
   const lineEndpointSelection = useCanvasStore((state) => state.lineEndpointSelection);
@@ -166,6 +174,9 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
   const displayY = isLine ? activeLinePoint.y : element.y;
   const rectangleRadiusMax = Math.max(0, Math.floor(Math.min(width, height) / 2));
   const polygonRadius = Math.max(1, Math.round(Math.min(width, height) / 2));
+  const bounds = getElementBoundsForPosition(element);
+  const horizontalPosition = getHorizontalPosition(bounds, snap.meta.width);
+  const verticalPosition = getVerticalPosition(bounds, snap.meta.height);
 
   return (
     <div className="space-y-3">
@@ -240,6 +251,19 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
           />
         </div>
       </div>
+
+      <PositionControls
+        horizontal={horizontalPosition}
+        vertical={verticalPosition}
+        onHorizontalChange={(horizontal) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { horizontal });
+          if (updates) updateElement(element.id, updates);
+        }}
+        onVerticalChange={(vertical) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { vertical });
+          if (updates) updateElement(element.id, updates);
+        }}
+      />
 
       {isLine && (
         <div className="space-y-3">

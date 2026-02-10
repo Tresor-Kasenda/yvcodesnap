@@ -10,13 +10,20 @@ import NumberField from '../ui/NumberField';
 import SliderField from '../ui/SliderField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import HoverTooltip from '../ui/HoverTooltip';
+import PositionControls from './PositionControls';
+import {
+  createElementPositionUpdate,
+  getElementBoundsForPosition,
+  getHorizontalPosition,
+  getVerticalPosition,
+} from './positionUtils';
 
 interface CodeInspectorProps {
   element: CodeElement;
 }
 
 const CodeInspector: React.FC<CodeInspectorProps> = ({ element }) => {
-  const { updateElement, saveToHistory } = useCanvasStore();
+  const { snap, updateElement, saveToHistory } = useCanvasStore();
   const [highlightFrom, setHighlightFrom] = useState('');
   const [highlightTo, setHighlightTo] = useState('');
   const [highlightStyle, setHighlightStyle] = useState<'focus' | 'added' | 'removed'>('focus');
@@ -58,6 +65,9 @@ const CodeInspector: React.FC<CodeInspectorProps> = ({ element }) => {
   };
 
   const totalLines = element.props.code.split('\n').length;
+  const bounds = getElementBoundsForPosition(element);
+  const horizontalPosition = getHorizontalPosition(bounds, snap.meta.width);
+  const verticalPosition = getVerticalPosition(bounds, snap.meta.height);
 
   return (
     <div className="space-y-4">
@@ -118,6 +128,19 @@ const CodeInspector: React.FC<CodeInspectorProps> = ({ element }) => {
           ))}
         </div>
       </div>
+
+      <PositionControls
+        horizontal={horizontalPosition}
+        vertical={verticalPosition}
+        onHorizontalChange={(horizontal) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { horizontal });
+          if (updates) updateElement(element.id, updates);
+        }}
+        onVerticalChange={(vertical) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { vertical });
+          if (updates) updateElement(element.id, updates);
+        }}
+      />
 
       {/* Font */}
       <div>

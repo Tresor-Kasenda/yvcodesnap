@@ -8,15 +8,8 @@ import ToggleSwitch from '../ui/ToggleSwitch';
 import SliderField from '../ui/SliderField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
-
-import { ArrowUpLeft, ArrowUpRight, ArrowDownLeft, ArrowDownRight } from 'lucide-react';
-
-const POSITION_OPTIONS = [
-  { value: 'top-left' as const, icon: ArrowUpLeft, label: 'Top Left' },
-  { value: 'top-right' as const, icon: ArrowUpRight, label: 'Top Right' },
-  { value: 'bottom-left' as const, icon: ArrowDownLeft, label: 'Bottom Left' },
-  { value: 'bottom-right' as const, icon: ArrowDownRight, label: 'Bottom Right' },
-];
+import PositionControls from './PositionControls';
+import type { HorizontalPosition, VerticalPosition } from './positionUtils';
 
 const SOCIAL_PLATFORMS = [
   { key: 'twitter', label: 'X (Twitter)', placeholder: '@username' },
@@ -102,6 +95,16 @@ const optimiseAvatarFile = async (file: File): Promise<string> => {
 const BrandingPanel: React.FC = () => {
   const { setBackground } = useCanvasStore();
   const { info, preferences, updateInfo, updateSocial, updatePreferences } = useBrandingStore();
+  const horizontalPosition: HorizontalPosition = preferences.position.endsWith('right')
+    ? 'right'
+    : preferences.position.endsWith('center')
+      ? 'center'
+      : 'left';
+  const verticalPosition: VerticalPosition = preferences.position.startsWith('bottom')
+    ? 'bottom'
+    : preferences.position.startsWith('middle')
+      ? 'middle'
+      : 'top';
 
   // Sync branding store to canvas whenever it changes
   useEffect(() => {
@@ -179,28 +182,21 @@ const BrandingPanel: React.FC = () => {
         <div className="space-y-5">
           {/* Position */}
           <div>
-            <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">
-              Position
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {POSITION_OPTIONS.map((opt) => {
-                const Icon = opt.icon;
-                return (
-                  <HoverTooltip key={opt.value} label={opt.label}>
-                    <button
-                      onClick={() => handleUpdatePreferences({ position: opt.value })}
-                      className={`flex items-center justify-center py-2 px-3 rounded-lg transition-all border ${preferences.position === opt.value
-                        ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:text-blue-400 dark:bg-blue-600/20'
-                        : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
-                        }`}
-                      aria-label={opt.label}
-                    >
-                      <Icon size={18} />
-                    </button>
-                  </HoverTooltip>
-                );
-              })}
-            </div>
+            <PositionControls
+              label="Position"
+              horizontal={horizontalPosition}
+              vertical={verticalPosition}
+              onHorizontalChange={(nextHorizontal) => {
+                handleUpdatePreferences({
+                  position: `${verticalPosition}-${nextHorizontal}` as typeof preferences.position,
+                });
+              }}
+              onVerticalChange={(nextVertical) => {
+                handleUpdatePreferences({
+                  position: `${nextVertical}-${horizontalPosition}` as typeof preferences.position,
+                });
+              }}
+            />
           </div>
 
           {/* Avatar */}

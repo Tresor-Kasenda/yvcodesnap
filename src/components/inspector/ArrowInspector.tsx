@@ -4,6 +4,13 @@ import type { ArrowElement } from '../../types';
 import SliderField from '../ui/SliderField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
+import PositionControls from './PositionControls';
+import {
+  createElementPositionUpdate,
+  getElementBoundsForPosition,
+  getHorizontalPosition,
+  getVerticalPosition,
+} from './positionUtils';
 
 interface ArrowInspectorProps {
   element: ArrowElement;
@@ -23,6 +30,7 @@ const clampMin = (value: number, fallback: number, min: number) => {
 };
 
 const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
+  const snap = useCanvasStore((state) => state.snap);
   const updateElement = useCanvasStore((state) => state.updateElement);
   const saveToHistory = useCanvasStore((state) => state.saveToHistory);
   const arrowEndpointSelection = useCanvasStore((state) => state.arrowEndpointSelection);
@@ -154,6 +162,9 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
   const displayY = activeArrowPoint.y;
   const displayWidth = size.width;
   const displayHeight = size.height;
+  const bounds = getElementBoundsForPosition(element);
+  const horizontalPosition = getHorizontalPosition(bounds, snap.meta.width);
+  const verticalPosition = getVerticalPosition(bounds, snap.meta.height);
 
   return (
     <div className="space-y-4">
@@ -202,6 +213,19 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
           </div>
         </div>
       </div>
+
+      <PositionControls
+        horizontal={horizontalPosition}
+        vertical={verticalPosition}
+        onHorizontalChange={(horizontal) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { horizontal });
+          if (updates) updateElement(element.id, updates);
+        }}
+        onVerticalChange={(vertical) => {
+          const updates = createElementPositionUpdate(element, snap.meta.width, snap.meta.height, { vertical });
+          if (updates) updateElement(element.id, updates);
+        }}
+      />
 
       <div>
         <label className={LABEL_CLASS}>Active Endpoint</label>

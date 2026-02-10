@@ -21,7 +21,16 @@ export interface SocialMedia {
 
 export interface Branding {
   enabled: boolean;
-  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  position:
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'middle-left'
+    | 'middle-center'
+    | 'middle-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   name: string;
   website: string;
   social: SocialMedia;
