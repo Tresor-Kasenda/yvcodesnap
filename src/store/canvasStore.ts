@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  elementExistsById,
+  findElementById,
+  removeElementsByIds,
+  updateElementById,
+} from '../utils/elementTree';
 import type {
   Snap,
   CanvasElement,
@@ -216,22 +222,32 @@ export const useCanvasStore = create<CanvasState>()(
       }),
 
       updateElement: (id, updates) => set((state) => {
-        const index = state.snap.elements.findIndex((el) => el.id === id);
-        if (index !== -1) {
+        if (elementExistsById(state.snap.elements, id)) {
           // record history before mutating
           state.history.past.push(JSON.parse(JSON.stringify(state.snap)));
           state.history.future = [];
           if (state.history.past.length > 50) state.history.past.shift();
 
-          state.snap.elements[index] = { ...state.snap.elements[index], ...updates } as CanvasElement;
+          updateElementById(state.snap.elements, id, updates);
         }
       }),
 
       deleteElement: (id) => set((state) => {
-        get().saveToHistory();
         const idsToDelete = id ? [id] : state.selectedElementIds;
-        state.snap.elements = state.snap.elements.filter((el) => !idsToDelete.includes(el.id));
-        state.selectedElementIds = state.selectedElementIds.filter((selId) => !idsToDelete.includes(selId));
+        if (idsToDelete.length === 0) return;
+
+        const idsSet = new Set(idsToDelete);
+        const hasAnyTarget = idsToDelete.some((targetId) =>
+          elementExistsById(state.snap.elements, targetId)
+        );
+
+        if (!hasAnyTarget) return;
+
+        get().saveToHistory();
+        removeElementsByIds(state.snap.elements, idsSet);
+        state.selectedElementIds = state.selectedElementIds.filter((selectedId) =>
+          elementExistsById(state.snap.elements, selectedId)
+        );
         if (
           state.lineEndpointSelection &&
           idsToDelete.includes(state.lineEndpointSelection.elementId)
@@ -289,6 +305,10 @@ export const useCanvasStore = create<CanvasState>()(
           return;
         }
 
+        if (!elementExistsById(state.snap.elements, id)) {
+          return;
+        }
+
         if (multi) {
           if (state.selectedElementIds.includes(id)) {
             state.selectedElementIds = state.selectedElementIds.filter((selId) => selId !== id);
@@ -312,10 +332,10 @@ export const useCanvasStore = create<CanvasState>()(
       }),
 
       setSelectedElementIds: (ids) => set((state) => {
-        const uniqueIds = new Set(ids);
-        state.selectedElementIds = state.snap.elements
-          .map((element) => element.id)
-          .filter((id) => uniqueIds.has(id));
+        const uniqueIds = Array.from(new Set(ids));
+        state.selectedElementIds = uniqueIds.filter((id) =>
+          elementExistsById(state.snap.elements, id)
+        );
         if (state.selectedElementIds.length !== 1) {
           state.lineEndpointSelection = null;
           state.arrowEndpointSelection = null;
@@ -335,7 +355,7 @@ export const useCanvasStore = create<CanvasState>()(
           return;
         }
 
-        const element = state.snap.elements.find((el) => el.id === elementId);
+        const element = findElementById(state.snap.elements, elementId);
         if (!element || element.type !== 'shape' || element.props.kind !== 'line') {
           state.lineEndpointSelection = null;
           return;
@@ -350,7 +370,7 @@ export const useCanvasStore = create<CanvasState>()(
           return;
         }
 
-        const element = state.snap.elements.find((el) => el.id === elementId);
+        const element = findElementById(state.snap.elements, elementId);
         if (!element || element.type !== 'arrow') {
           state.arrowEndpointSelection = null;
           return;

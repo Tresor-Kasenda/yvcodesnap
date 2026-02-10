@@ -732,14 +732,16 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current.getStage();
+      const topLevelIds = new Set(snap.elements.map((element) => element.id));
       const selectedNodes = selectedElementIds
+        .filter((id) => topLevelIds.has(id))
         .map((id) => stage?.findOne(`#${id}`))
         .filter((node) => node !== undefined) as Konva.Node[];
 
       transformerRef.current.nodes(selectedNodes);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedElementIds]);
+  }, [selectedElementIds, snap.elements]);
 
   const handleStageWheel = useCallback((evt: WheelEvent) => {
     evt.preventDefault();

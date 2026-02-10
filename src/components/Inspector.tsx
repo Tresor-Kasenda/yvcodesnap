@@ -2,6 +2,7 @@ import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from '
 import { BringToFront, SendToBack } from 'lucide-react';
 import { useCanvasStore } from '../store/canvasStore';
 import HoverTooltip, { HoverTooltipProvider } from './ui/HoverTooltip';
+import { findElementById } from '../utils/elementTree';
 
 import BackgroundPanel from './inspector/BackgroundPanel';
 import CanvasSizePanel from './inspector/CanvasSizePanel';
@@ -47,7 +48,7 @@ const Inspector: React.FC = () => {
   const selectedElement = useMemo(
     () => {
       if (selectedElementIds.length === 1) {
-        return snap.elements.find(el => el.id === selectedElementIds[0]);
+        return findElementById(snap.elements, selectedElementIds[0]);
       }
       return null;
     },

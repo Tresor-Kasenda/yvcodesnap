@@ -1,6 +1,9 @@
-import React, { memo, useMemo, useCallback, useRef } from 'react';
+import React, { memo, useMemo, useCallback, useRef, useState } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
-import type { CanvasElement, ShapeElement } from '../types';
+import type { CanvasElement, GroupElement, ShapeElement } from '../types';
+import { findElementById } from '../utils/elementTree';
+
+const isGroupElement = (element: CanvasElement): element is GroupElement => element.type === 'group';
 
 // Shared label helper so both layer items and footer rename can use it
 const getElementLabel = (element: CanvasElement): string => {
@@ -12,6 +15,8 @@ const getElementLabel = (element: CanvasElement): string => {
       return element.props.text.slice(0, 20) + (element.props.text.length > 20 ? '...' : '');
     case 'arrow':
       return 'Arrow';
+    case 'group':
+      return `Group (${element.elements.length})`;
     case 'shape': {
       const kind = (element as ShapeElement).props.kind;
       switch (kind) {
@@ -40,14 +45,26 @@ const LayerItem = memo(({
   isSelected,
   onSelect,
   onToggleLock,
-  onToggleVisibility
+  onToggleVisibility,
+  depth = 0,
+  canExpand = false,
+  isExpanded = false,
+  onToggleExpand,
+  showActions = true,
 }: {
   element: CanvasElement;
   isSelected: boolean;
   onSelect: (event: React.MouseEvent<HTMLDivElement>) => void;
-  onToggleLock: () => void;
-  onToggleVisibility: () => void;
+  onToggleLock?: () => void;
+  onToggleVisibility?: () => void;
+  depth?: number;
+  canExpand?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  showActions?: boolean;
 }) => {
+  const rowIndent = 8 + depth * 12;
+
   const getElementIcon = (element: CanvasElement) => {
     switch (element.type) {
       case 'code':
@@ -66,6 +83,12 @@ const LayerItem = memo(({
         return (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        );
+      case 'group':
+        return (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
           </svg>
         );
       case 'shape': {
@@ -113,11 +136,35 @@ const LayerItem = memo(({
   return (
     <div
       onClick={onSelect}
-      className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all ${isSelected
+      style={{ paddingLeft: `${rowIndent}px`, paddingRight: '8px' }}
+      className={`group flex items-center gap-1.5 py-1.5 rounded-md cursor-pointer transition-all ${isSelected
         ? 'bg-blue-100 dark:bg-blue-600/20 border border-blue-300 dark:border-blue-500/50'
         : 'hover:bg-neutral-100 dark:hover:bg-white/5 border border-transparent'
         }`}
     >
+      {canExpand ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand?.();
+          }}
+          className="shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-500 dark:text-neutral-400 transition-colors"
+          title={isExpanded ? 'Collapse group' : 'Expand group'}
+          aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      ) : (
+        depth > 0 ? <span className="w-3.5 h-3.5 shrink-0" /> : null
+      )}
+
       {/* Element type icon */}
       <div className={`shrink-0 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
         {getElementIcon(element)}
@@ -130,12 +177,13 @@ const LayerItem = memo(({
       </span>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      {showActions && (
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         {/* Lock toggle */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleLock();
+            onToggleLock?.();
           }}
           className={`p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.locked ? 'text-yellow-600 dark:text-yellow-400' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
             }`}
@@ -156,7 +204,7 @@ const LayerItem = memo(({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleVisibility();
+            onToggleVisibility?.();
           }}
           className={`p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors ${element.visible ? 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300' : 'text-red-500 dark:text-red-400'
             }`}
@@ -173,7 +221,8 @@ const LayerItem = memo(({
             </svg>
           )}
         </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -192,6 +241,7 @@ const LayersPanel: React.FC = () => {
     deleteElement,
   } = useCanvasStore();
   const lastSelectedIdRef = useRef<string | null>(null);
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Record<string, boolean>>({});
 
   const elements = useMemo(() => [...snap.elements].reverse(), [snap.elements]); // Show top layers first
 
@@ -218,7 +268,7 @@ const LayersPanel: React.FC = () => {
   }, [selectedElementIds, deleteElement]);
 
   const selectedElement = useMemo(
-    () => (selectedElementIds.length === 1 ? snap.elements.find((el) => el.id === selectedElementIds[0]) : null),
+    () => (selectedElementIds.length === 1 ? findElementById(snap.elements, selectedElementIds[0]) : null),
     [snap.elements, selectedElementIds]
   );
 
@@ -270,6 +320,53 @@ const LayersPanel: React.FC = () => {
     [elements, selectedElementIds, setSelectedElementIds, setTool]
   );
 
+  const handleToggleGroupExpanded = useCallback((id: string) => {
+    setExpandedGroupIds((previous) => ({
+      ...previous,
+      [id]: !(previous[id] ?? true),
+    }));
+  }, []);
+
+  const renderLayerNode = useCallback(
+    (element: CanvasElement, depth = 0, selectableId = element.id): React.ReactNode => {
+      const isGroup = isGroupElement(element);
+      const hasChildren = isGroup && element.elements.length > 0;
+      const isExpanded = hasChildren ? (expandedGroupIds[element.id] ?? true) : false;
+
+      return (
+        <React.Fragment key={`${element.id}-${depth}`}>
+          <LayerItem
+            element={element}
+            depth={depth}
+            isSelected={selectedElementIds.includes(selectableId)}
+            onSelect={(event) => handleLayerSelect(event, selectableId)}
+            onToggleLock={() => handleToggleLock(element.id, element.locked)}
+            onToggleVisibility={() => handleToggleVisibility(element.id, element.visible)}
+            canExpand={hasChildren}
+            isExpanded={isExpanded}
+            onToggleExpand={hasChildren ? () => handleToggleGroupExpanded(element.id) : undefined}
+            showActions
+          />
+          {hasChildren && isExpanded && (
+            <div className="space-y-1">
+              {[...element.elements].reverse().map((child) =>
+                renderLayerNode(child, depth + 1, child.id)
+              )}
+            </div>
+          )}
+        </React.Fragment>
+      );
+    },
+    [
+      expandedGroupIds,
+      selectedElementIds,
+      handleLayerSelect,
+      handleToggleLock,
+      handleToggleVisibility,
+      handleToggleGroupExpanded,
+    ]
+  );
+
   return (
     <div className="w-64 sm:w-56 bg-white dark:bg-[#09090b] border-r border-neutral-200 dark:border-white/5 flex flex-col h-full shadow-2xl md:shadow-none">
       <div className="p-2 sm:p-2.5 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between">
@@ -286,16 +383,7 @@ const LayersPanel: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-1">
-            {elements.map((element) => (
-              <LayerItem
-                key={element.id}
-                element={element}
-                isSelected={selectedElementIds.includes(element.id)}
-                onSelect={(event) => handleLayerSelect(event, element.id)}
-                onToggleLock={() => handleToggleLock(element.id, element.locked)}
-                onToggleVisibility={() => handleToggleVisibility(element.id, element.visible)}
-              />
-            ))}
+            {elements.map((element) => renderLayerNode(element))}
           </div>
         )}
       </div>
