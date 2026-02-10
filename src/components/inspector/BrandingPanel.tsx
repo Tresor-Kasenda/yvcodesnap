@@ -1,11 +1,12 @@
 import React, { useEffect, useCallback } from 'react';
+import { Circle, Droplets, Share2, Square, Type } from 'lucide-react';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useBrandingStore } from '../../store/brandingStore';
 import { FONT_FAMILIES } from '../../types';
 import { SocialIcon } from '../elements/SocialIcons';
 import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
-import SliderField from '../ui/SliderField';
+import NumberField from '../ui/NumberField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
 import PositionControls from './PositionControls';
@@ -22,6 +23,7 @@ const SOCIAL_PLATFORMS = [
 
 const MAX_AVATAR_DIMENSION = 192;
 const MAX_EMBEDDED_AVATAR_LENGTH = 350000;
+const PREFIX_ICON_CLASS = 'h-3 w-3';
 
 const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -258,15 +260,18 @@ const BrandingPanel: React.FC = () => {
             {preferences.showAvatar && (
               <div className="mt-3">
                 <label className="block text-xs text-neutral-500 mb-2">
-                  Size: {preferences.avatarSize}px
+                  Size
                 </label>
-                <SliderField
+                <NumberField
+                  value={preferences.avatarSize}
+                  onChange={(v) => handleUpdatePreferences({ avatarSize: typeof v === 'number' ? v : preferences.avatarSize })}
                   min={32}
                   max={120}
                   step={1}
-                  value={preferences.avatarSize}
-                  onValueChange={(v) => handleUpdatePreferences({ avatarSize: v })}
-                  ariaLabel="Avatar size"
+                  prefix={<Circle className={PREFIX_ICON_CLASS} />}
+                  suffix="px"
+                  className="w-full max-w-none"
+                  inputClassName="text-[11px]"
                 />
               </div>
             )}
@@ -365,8 +370,8 @@ const BrandingPanel: React.FC = () => {
             </div>
 
             {/* Social Icons Layout */}
-            <div className="mt-4 space-y-3">
-              <div>
+            <div className="mt-4">
+              <div className="min-w-0">
                 <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">Layout</label>
                 <div className="flex gap-2">
                   <HoverTooltip label="Horizontal layout">
@@ -395,20 +400,6 @@ const BrandingPanel: React.FC = () => {
                   </HoverTooltip>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
-                  Icon Size: {preferences.socialIconSize}px
-                </label>
-                <SliderField
-                  min={14}
-                  max={32}
-                  step={1}
-                  value={preferences.socialIconSize}
-                  onValueChange={(v) => handleUpdatePreferences({ socialIconSize: v })}
-                  ariaLabel="Social icon size"
-                />
-              </div>
             </div>
           </div>
 
@@ -418,32 +409,34 @@ const BrandingPanel: React.FC = () => {
               Styling
             </label>
 
-            {/* Font Family */}
-            <div className="mb-4">
-              <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">Font</label>
-              <SelectField
-                value={preferences.fontFamily}
-                onValueChange={(value) => handleUpdatePreferences({ fontFamily: value })}
-                options={FONT_FAMILIES.text.map((font) => ({
-                  value: font,
-                  label: <span style={{ fontFamily: font }}>{font}</span>,
-                }))}
-              />
-            </div>
-
-            {/* Font Size */}
-            <div className="mb-4">
-              <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
-                Font Size: {preferences.fontSize}px
-              </label>
-              <SliderField
-                min={10}
-                max={24}
-                step={1}
-                value={preferences.fontSize}
-                onValueChange={(v) => handleUpdatePreferences({ fontSize: v })}
-                ariaLabel="Font size"
-              />
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">Font</label>
+                <SelectField
+                  value={preferences.fontFamily}
+                  onValueChange={(value) => handleUpdatePreferences({ fontFamily: value })}
+                  options={FONT_FAMILIES.text.map((font) => ({
+                    value: font,
+                    label: <span style={{ fontFamily: font }}>{font}</span>,
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
+                  Icon Size
+                </label>
+                <NumberField
+                  value={preferences.socialIconSize}
+                  onChange={(v) => handleUpdatePreferences({ socialIconSize: typeof v === 'number' ? v : preferences.socialIconSize })}
+                  min={14}
+                  max={32}
+                  step={1}
+                  prefix={<Share2 className={PREFIX_ICON_CLASS} />}
+                  suffix="px"
+                  className="w-full max-w-none"
+                  inputClassName="text-[11px]"
+                />
+              </div>
             </div>
 
             {/* Color */}
@@ -454,7 +447,7 @@ const BrandingPanel: React.FC = () => {
                   value={preferences.color}
                   onChange={(color) => handleUpdatePreferences({ color })}
                   ariaLabel="Branding color"
-                  className="h-6 w-6"
+                  className="h-5 w-5"
                 />
                 <input
                   type="text"
@@ -465,34 +458,63 @@ const BrandingPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Opacity */}
-            <div className="mb-4">
-              <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
-                Opacity: {Math.round(preferences.opacity * 100)}%
-              </label>
-              <SliderField
-                min={0.1}
-                max={1}
-                step={0.05}
-                value={preferences.opacity}
-                onValueChange={(v) => handleUpdatePreferences({ opacity: v })}
-                ariaLabel="Opacity"
-              />
-            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Font Size */}
+              <div>
+                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
+                  Font Size
+                </label>
+                <NumberField
+                  value={preferences.fontSize}
+                  onChange={(v) => handleUpdatePreferences({ fontSize: typeof v === 'number' ? v : preferences.fontSize })}
+                  min={10}
+                  max={24}
+                  step={1}
+                  prefix={<Type className={PREFIX_ICON_CLASS} />}
+                  suffix="px"
+                  className="w-full max-w-none"
+                  inputClassName="text-[11px]"
+                />
+              </div>
 
-            {/* Padding */}
-            <div>
-              <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
-                Padding: {preferences.padding}px
-              </label>
-              <SliderField
-                min={8}
-                max={48}
-                step={1}
-                value={preferences.padding}
-                onValueChange={(v) => handleUpdatePreferences({ padding: v })}
-                ariaLabel="Padding"
-              />
+              {/* Opacity */}
+              <div>
+                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
+                  Opacity
+                </label>
+                <NumberField
+                  value={Math.round(preferences.opacity * 100)}
+                  onChange={(v) => {
+                    const nextPercent = typeof v === 'number' ? v : Math.round(preferences.opacity * 100);
+                    handleUpdatePreferences({ opacity: Math.max(10, Math.min(100, nextPercent)) / 100 });
+                  }}
+                  min={10}
+                  max={100}
+                  step={5}
+                  prefix={<Droplets className={PREFIX_ICON_CLASS} />}
+                  suffix="%"
+                  className="w-full max-w-none"
+                  inputClassName="text-[11px]"
+                />
+              </div>
+
+              {/* Padding */}
+              <div>
+                <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">
+                  Padding
+                </label>
+                <NumberField
+                  value={preferences.padding}
+                  onChange={(v) => handleUpdatePreferences({ padding: typeof v === 'number' ? v : preferences.padding })}
+                  min={8}
+                  max={48}
+                  step={1}
+                  prefix={<Square className={PREFIX_ICON_CLASS} />}
+                  suffix="px"
+                  className="w-full max-w-none"
+                  inputClassName="text-[11px]"
+                />
+              </div>
             </div>
           </div>
         </div>

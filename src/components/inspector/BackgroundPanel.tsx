@@ -1,9 +1,10 @@
 import React from 'react';
+import { ArrowUpDown, RotateCw, Type } from 'lucide-react';
 import { useCanvasStore } from '../../store/canvasStore';
 import { FONT_FAMILIES } from '../../types';
 import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
-import SliderField from '../ui/SliderField';
+import NumberField from '../ui/NumberField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 import HoverTooltip from '../ui/HoverTooltip';
 
@@ -19,6 +20,7 @@ const GRADIENT_PRESETS = [
   { from: '#f5f5f5', to: '#e0e0e0', name: 'Light' },
   { from: '#ffffff', to: '#f0f0f0', name: 'White' },
 ];
+const PREFIX_ICON_CLASS = 'h-3 w-3';
 
 const BackgroundPanel: React.FC = () => {
   const { snap, setBackground } = useCanvasStore();
@@ -142,18 +144,24 @@ const BackgroundPanel: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Angle: {background.gradient.angle}°</label>
-            <SliderField
+            <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Angle</label>
+            <NumberField
+              value={background.gradient.angle}
+              onChange={(v) =>
+                setBackground({
+                  gradient: {
+                    ...background.gradient,
+                    angle: typeof v === 'number' ? v : background.gradient.angle,
+                  },
+                })
+              }
               min={0}
               max={360}
               step={1}
-              value={background.gradient.angle}
-              onValueChange={(v) =>
-                setBackground({
-                  gradient: { ...background.gradient, angle: v },
-                })
-              }
-              ariaLabel="Gradient angle"
+              prefix={<RotateCw className={PREFIX_ICON_CLASS} />}
+              suffix="°"
+              className="w-full max-w-none"
+              inputClassName="text-[11px]"
             />
           </div>
         </>
@@ -222,19 +230,25 @@ const BackgroundPanel: React.FC = () => {
             {/* Height */}
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">
-                Height: {background.brandStrip.height || 60}px
+                Height
               </label>
-              <SliderField
+              <NumberField
+                value={background.brandStrip.height || 60}
+                onChange={(v) =>
+                  setBackground({
+                    brandStrip: {
+                      ...background.brandStrip,
+                      height: typeof v === 'number' ? v : (background.brandStrip.height || 60),
+                    },
+                  })
+                }
                 min={30}
                 max={120}
                 step={1}
-                value={background.brandStrip.height || 60}
-                onValueChange={(v) =>
-                  setBackground({
-                    brandStrip: { ...background.brandStrip, height: v },
-                  })
-                }
-                ariaLabel="Brand strip height"
+                prefix={<ArrowUpDown className={PREFIX_ICON_CLASS} />}
+                suffix="px"
+                className="w-full max-w-none"
+                inputClassName="text-[11px]"
               />
             </div>
 
@@ -314,19 +328,25 @@ const BackgroundPanel: React.FC = () => {
             {/* Font Size */}
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">
-                Font Size: {background.brandStrip.fontSize || 16}px
+                Font Size
               </label>
-              <SliderField
+              <NumberField
+                value={background.brandStrip.fontSize || 16}
+                onChange={(v) =>
+                  setBackground({
+                    brandStrip: {
+                      ...background.brandStrip,
+                      fontSize: typeof v === 'number' ? v : (background.brandStrip.fontSize || 16),
+                    },
+                  })
+                }
                 min={12}
                 max={32}
                 step={1}
-                value={background.brandStrip.fontSize || 16}
-                onValueChange={(v) =>
-                  setBackground({
-                    brandStrip: { ...background.brandStrip, fontSize: v },
-                  })
-                }
-                ariaLabel="Brand strip font size"
+                prefix={<Type className={PREFIX_ICON_CLASS} />}
+                suffix="px"
+                className="w-full max-w-none"
+                inputClassName="text-[11px]"
               />
             </div>
           </div>

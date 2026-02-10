@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { useCanvasStore } from '../../store/canvasStore';
 import NumberField from '../ui/NumberField';
 import HoverTooltip from '../ui/HoverTooltip';
 
 const MIN_CANVAS = 320;
 const MAX_CANVAS = 10000;
+const PREFIX_ICON_CLASS = 'h-3 w-3';
 
 const CanvasSizePanel: React.FC = () => {
   const { snap, updateMeta } = useCanvasStore();
@@ -61,9 +63,9 @@ const CanvasSizePanel: React.FC = () => {
               min={MIN_CANVAS}
               max={MAX_CANVAS}
               step={10}
-              prefix="W"
+              prefix={<ArrowLeftRight className={PREFIX_ICON_CLASS} />}
               suffix="px"
-              className="w-full"
+              className="w-full max-w-none"
               inputClassName="text-sm"
             />
           </div>
@@ -76,9 +78,9 @@ const CanvasSizePanel: React.FC = () => {
               min={MIN_CANVAS}
               max={MAX_CANVAS}
               step={10}
-              prefix="H"
+              prefix={<ArrowUpDown className={PREFIX_ICON_CLASS} />}
               suffix="px"
-              className="w-full"
+              className="w-full max-w-none"
               inputClassName="text-sm"
             />
           </div>
