@@ -5,6 +5,7 @@ import type { ShapeElement } from '../../types';
 import NumberField from '../ui/NumberField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
+import HoverTooltip from '../ui/HoverTooltip';
 
 const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-1.5';
 const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-[11px] focus:outline-none font-mono';
@@ -245,18 +246,24 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
           <div>
             <label className={LABEL_CLASS}>Active Endpoint</label>
             <div className="flex gap-1.5 p-0.5 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-              <button
-                onClick={() => setLineEndpointSelection(element.id, 'start')}
-                className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-              >
-                Start
-              </button>
-              <button
-                onClick={() => setLineEndpointSelection(element.id, 'end')}
-                className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-              >
-                End
-              </button>
+              <HoverTooltip label="Select start endpoint">
+                <button
+                  onClick={() => setLineEndpointSelection(element.id, 'start')}
+                  className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+                  aria-label="Select start endpoint"
+                >
+                  Start
+                </button>
+              </HoverTooltip>
+              <HoverTooltip label="Select end endpoint">
+                <button
+                  onClick={() => setLineEndpointSelection(element.id, 'end')}
+                  className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+                  aria-label="Select end endpoint"
+                >
+                  End
+                </button>
+              </HoverTooltip>
             </div>
           </div>
 

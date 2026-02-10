@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import NumberField from '../ui/NumberField';
+import HoverTooltip from '../ui/HoverTooltip';
 
 const MIN_CANVAS = 320;
 const MAX_CANVAS = 10000;
@@ -52,28 +53,36 @@ const CanvasSizePanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <NumberField
-          value={draft.width === '' ? '' : Number(draft.width)}
-          onChange={(v) => updateWidth(v === '' ? '' : String(v))}
-          min={MIN_CANVAS}
-          max={MAX_CANVAS}
-          step={10}
-          prefix="W"
-          suffix="px"
-          className="w-full"
-          inputClassName="text-sm"
-        />
-        <NumberField
-          value={draft.height === '' ? '' : Number(draft.height)}
-          onChange={(v) => updateHeight(v === '' ? '' : String(v))}
-          min={MIN_CANVAS}
-          max={MAX_CANVAS}
-          step={10}
-          prefix="H"
-          suffix="px"
-          className="w-full"
-          inputClassName="text-sm"
-        />
+        <HoverTooltip label="Canvas width">
+          <div>
+            <NumberField
+              value={draft.width === '' ? '' : Number(draft.width)}
+              onChange={(v) => updateWidth(v === '' ? '' : String(v))}
+              min={MIN_CANVAS}
+              max={MAX_CANVAS}
+              step={10}
+              prefix="W"
+              suffix="px"
+              className="w-full"
+              inputClassName="text-sm"
+            />
+          </div>
+        </HoverTooltip>
+        <HoverTooltip label="Canvas height">
+          <div>
+            <NumberField
+              value={draft.height === '' ? '' : Number(draft.height)}
+              onChange={(v) => updateHeight(v === '' ? '' : String(v))}
+              min={MIN_CANVAS}
+              max={MAX_CANVAS}
+              step={10}
+              prefix="H"
+              suffix="px"
+              className="w-full"
+              inputClassName="text-sm"
+            />
+          </div>
+        </HoverTooltip>
       </div>
     </div>
   );

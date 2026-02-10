@@ -3,6 +3,7 @@ import { useCanvasStore } from '../../store/canvasStore';
 import type { ArrowElement } from '../../types';
 import SliderField from '../ui/SliderField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
+import HoverTooltip from '../ui/HoverTooltip';
 
 interface ArrowInspectorProps {
   element: ArrowElement;
@@ -205,18 +206,24 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
       <div>
         <label className={LABEL_CLASS}>Active Endpoint</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <button
-            onClick={() => setArrowEndpointSelection(element.id, 'start')}
-            className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            Start
-          </button>
-          <button
-            onClick={() => setArrowEndpointSelection(element.id, 'end')}
-            className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            End
-          </button>
+          <HoverTooltip label="Select start endpoint">
+            <button
+              onClick={() => setArrowEndpointSelection(element.id, 'start')}
+              className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Select start endpoint"
+            >
+              Start
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Select end endpoint">
+            <button
+              onClick={() => setArrowEndpointSelection(element.id, 'end')}
+              className={`${SEGMENT_BUTTON_BASE} ${activeArrowEndpoint === 'end' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Select end endpoint"
+            >
+              End
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 
@@ -285,18 +292,24 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
       <div>
         <label className={LABEL_CLASS}>Style</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <button
-            onClick={() => updateProps({ style: 'straight' })}
-            className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'straight' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            Straight
-          </button>
-          <button
-            onClick={() => updateProps({ style: 'curved' })}
-            className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'curved' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            Curved
-          </button>
+          <HoverTooltip label="Straight arrow">
+            <button
+              onClick={() => updateProps({ style: 'straight' })}
+              className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'straight' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Straight arrow"
+            >
+              Straight
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Curved arrow">
+            <button
+              onClick={() => updateProps({ style: 'curved' })}
+              className={`${SEGMENT_BUTTON_BASE} ${element.props.style === 'curved' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Curved arrow"
+            >
+              Curved
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 
@@ -305,20 +318,26 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
           <label className={LABEL_CLASS}>Control Points ({(element.props.controlPoints || []).length}/2)</label>
           <div className="space-y-2">
             <div className="flex gap-2">
-              <button
-                onClick={addControlPoint}
-                disabled={(element.props.controlPoints || []).length >= 2}
-                className="flex-1 py-2 px-3 rounded-lg text-[10px] font-medium bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                + Add Point
-              </button>
-              <button
-                onClick={resetControlPoints}
-                disabled={(element.props.controlPoints || []).length === 0}
-                className="py-2 px-3 rounded-lg text-[10px] font-medium bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Reset
-              </button>
+              <HoverTooltip label="Add a control point" disabled={(element.props.controlPoints || []).length >= 2}>
+                <button
+                  onClick={addControlPoint}
+                  disabled={(element.props.controlPoints || []).length >= 2}
+                  className="flex-1 py-2 px-3 rounded-lg text-[10px] font-medium bg-blue-600/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Add control point"
+                >
+                  + Add Point
+                </button>
+              </HoverTooltip>
+              <HoverTooltip label="Reset control points" disabled={(element.props.controlPoints || []).length === 0}>
+                <button
+                  onClick={resetControlPoints}
+                  disabled={(element.props.controlPoints || []).length === 0}
+                  className="py-2 px-3 rounded-lg text-[10px] font-medium bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-white/10 hover:text-neutral-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Reset control points"
+                >
+                  Reset
+                </button>
+              </HoverTooltip>
             </div>
             {(element.props.controlPoints || []).length > 0 && (
               <div className="space-y-1">
@@ -327,14 +346,17 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
                     <span className="text-[10px] text-neutral-600 dark:text-neutral-400">
                       Point {index + 1}: ({Math.round(controlPoint.x)}, {Math.round(controlPoint.y)})
                     </span>
-                    <button
-                      onClick={() => removeControlPoint(index)}
-                      className="p-1 rounded hover:bg-red-500/20 text-neutral-500 dark:text-neutral-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <HoverTooltip label="Remove control point">
+                      <button
+                        onClick={() => removeControlPoint(index)}
+                        className="p-1 rounded hover:bg-red-500/20 text-neutral-500 dark:text-neutral-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                        aria-label="Remove control point"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </HoverTooltip>
                   </div>
                 ))}
               </div>
@@ -403,24 +425,33 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
       <div>
         <label className={LABEL_CLASS}>Arrow Head</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <button
-            onClick={() => updateProps({ head: 'filled' })}
-            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'filled' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            Filled
-          </button>
-          <button
-            onClick={() => updateProps({ head: 'outline' })}
-            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'outline' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            Outline
-          </button>
-          <button
-            onClick={() => updateProps({ head: 'none' })}
-            className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'none' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
-          >
-            None
-          </button>
+          <HoverTooltip label="Filled arrow head">
+            <button
+              onClick={() => updateProps({ head: 'filled' })}
+              className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'filled' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Filled arrow head"
+            >
+              Filled
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Outline arrow head">
+            <button
+              onClick={() => updateProps({ head: 'outline' })}
+              className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'outline' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="Outline arrow head"
+            >
+              Outline
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="No arrow head">
+            <button
+              onClick={() => updateProps({ head: 'none' })}
+              className={`${SEGMENT_BUTTON_BASE} ${element.props.head === 'none' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
+              aria-label="No arrow head"
+            >
+              None
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 

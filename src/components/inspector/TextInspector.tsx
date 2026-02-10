@@ -6,6 +6,7 @@ import { loadFont } from '../../utils/fontLoader';
 import SliderField from '../ui/SliderField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
+import HoverTooltip from '../ui/HoverTooltip';
 
 interface TextInspectorProps {
   element: TextElement;
@@ -45,22 +46,24 @@ const TextInspector: React.FC<TextInspectorProps> = ({ element }) => {
         <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Font Family</label>
         <div className="space-y-1.5 max-h-48 overflow-y-auto p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
           {FONT_FAMILIES.text.map((font) => (
-            <button
-              key={font}
-              onClick={() => handleFontChange(font)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-left transition-all ${
-                element.props.fontFamily === font
-                  ? 'bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <span style={{ fontFamily: font }}>{font}</span>
-              {element.props.fontFamily === font && (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
-            </button>
+            <HoverTooltip key={font} label={font}>
+              <button
+                onClick={() => handleFontChange(font)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-left transition-all ${
+                  element.props.fontFamily === font
+                    ? 'bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-white/5 border border-transparent'
+                }`}
+                aria-label={`Text font ${font}`}
+              >
+                <span style={{ fontFamily: font }}>{font}</span>
+                {element.props.fontFamily === font && (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+            </HoverTooltip>
           ))}
         </div>
       </div>
@@ -102,36 +105,45 @@ const TextInspector: React.FC<TextInspectorProps> = ({ element }) => {
       <div>
         <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Style</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <button
-            onClick={() => updateProps({ bold: !element.props.bold })}
-            className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${
-              element.props.bold
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            B
-          </button>
-          <button
-            onClick={() => updateProps({ italic: !element.props.italic })}
-            className={`flex-1 py-2 rounded-md text-sm italic transition-all ${
-              element.props.italic
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            I
-          </button>
-          <button
-            onClick={() => updateProps({ underline: !element.props.underline })}
-            className={`flex-1 py-2 rounded-md text-sm underline transition-all ${
-              element.props.underline
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            U
-          </button>
+          <HoverTooltip label="Bold">
+            <button
+              onClick={() => updateProps({ bold: !element.props.bold })}
+              className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${
+                element.props.bold
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Toggle bold"
+            >
+              B
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Italic">
+            <button
+              onClick={() => updateProps({ italic: !element.props.italic })}
+              className={`flex-1 py-2 rounded-md text-sm italic transition-all ${
+                element.props.italic
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Toggle italic"
+            >
+              I
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Underline">
+            <button
+              onClick={() => updateProps({ underline: !element.props.underline })}
+              className={`flex-1 py-2 rounded-md text-sm underline transition-all ${
+                element.props.underline
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Toggle underline"
+            >
+              U
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 
@@ -139,42 +151,51 @@ const TextInspector: React.FC<TextInspectorProps> = ({ element }) => {
       <div>
         <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-500 uppercase tracking-wider mb-2">Alignment</label>
         <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
-          <button
-            onClick={() => updateProps({ align: 'left' })}
-            className={`flex-1 py-2 rounded-md text-sm transition-all ${
-              element.props.align === 'left'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h14" />
-            </svg>
-          </button>
-          <button
-            onClick={() => updateProps({ align: 'center' })}
-            className={`flex-1 py-2 rounded-md text-sm transition-all ${
-              element.props.align === 'center'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M5 18h14" />
-            </svg>
-          </button>
-          <button
-            onClick={() => updateProps({ align: 'right' })}
-            className={`flex-1 py-2 rounded-md text-sm transition-all ${
-              element.props.align === 'right'
-                ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
-            }`}
-          >
-            <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M6 18h14" />
-            </svg>
-          </button>
+          <HoverTooltip label="Align left">
+            <button
+              onClick={() => updateProps({ align: 'left' })}
+              className={`flex-1 py-2 rounded-md text-sm transition-all ${
+                element.props.align === 'left'
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Align left"
+            >
+              <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h14" />
+              </svg>
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Align center">
+            <button
+              onClick={() => updateProps({ align: 'center' })}
+              className={`flex-1 py-2 rounded-md text-sm transition-all ${
+                element.props.align === 'center'
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Align center"
+            >
+              <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M5 18h14" />
+              </svg>
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Align right">
+            <button
+              onClick={() => updateProps({ align: 'right' })}
+              className={`flex-1 py-2 rounded-md text-sm transition-all ${
+                element.props.align === 'right'
+                  ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5'
+              }`}
+              aria-label="Align right"
+            >
+              <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M6 18h14" />
+              </svg>
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
+import HoverTooltip from '../ui/HoverTooltip';
 
 interface Preset {
     id: string;
@@ -72,23 +73,25 @@ const PresetsPanel: React.FC = () => {
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
                 {PRESETS.map((preset) => (
-                    <button
-                        key={preset.id}
-                        onClick={() => applyPreset({
-                            background: preset.background,
-                            shadow: preset.shadow,
-                            cornerRadius: preset.cornerRadius,
-                        })}
-                        className="group relative flex flex-col gap-2 p-2 rounded-xl bg-white border border-neutral-200 hover:border-blue-500/50 hover:bg-blue-50 transition-all text-left dark:bg-white/5 dark:border-white/5 dark:hover:bg-white/10"
-                    >
-                        <div
-                            className="w-full aspect-[4/3] rounded-lg border border-neutral-200 shadow-inner dark:border-white/10"
-                            style={{ background: preset.preview }}
-                        />
-                        <span className="text-[11px] font-medium text-neutral-700 group-hover:text-neutral-900 px-1 dark:text-neutral-400 dark:group-hover:text-white">
-                            {preset.name}
-                        </span>
-                    </button>
+                    <HoverTooltip key={preset.id} label={`Apply preset: ${preset.name}`}>
+                        <button
+                            onClick={() => applyPreset({
+                                background: preset.background,
+                                shadow: preset.shadow,
+                                cornerRadius: preset.cornerRadius,
+                            })}
+                            className="group relative flex flex-col gap-2 p-2 rounded-xl bg-white border border-neutral-200 hover:border-blue-500/50 hover:bg-blue-50 transition-all text-left dark:bg-white/5 dark:border-white/5 dark:hover:bg-white/10"
+                            aria-label={`Apply preset ${preset.name}`}
+                        >
+                            <div
+                                className="w-full aspect-[4/3] rounded-lg border border-neutral-200 shadow-inner dark:border-white/10"
+                                style={{ background: preset.preview }}
+                            />
+                            <span className="text-[11px] font-medium text-neutral-700 group-hover:text-neutral-900 px-1 dark:text-neutral-400 dark:group-hover:text-white">
+                                {preset.name}
+                            </span>
+                        </button>
+                    </HoverTooltip>
                 ))}
             </div>
             <p className="text-[10px] text-neutral-500 italic px-1">

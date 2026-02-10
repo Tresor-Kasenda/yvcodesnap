@@ -7,6 +7,7 @@ import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import SliderField from '../ui/SliderField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
+import HoverTooltip from '../ui/HoverTooltip';
 
 import { ArrowUpLeft, ArrowUpRight, ArrowDownLeft, ArrowDownRight } from 'lucide-react';
 
@@ -185,18 +186,18 @@ const BrandingPanel: React.FC = () => {
               {POSITION_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 return (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleUpdatePreferences({ position: opt.value })}
-                    className={`flex items-center justify-center py-2 px-3 rounded-lg transition-all border ${preferences.position === opt.value
-                      ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:text-blue-400 dark:bg-blue-600/20'
-                      : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
-                      }`}
-                    title={opt.label}
-                    aria-label={opt.label}
-                  >
-                    <Icon size={18} />
-                  </button>
+                  <HoverTooltip key={opt.value} label={opt.label}>
+                    <button
+                      onClick={() => handleUpdatePreferences({ position: opt.value })}
+                      className={`flex items-center justify-center py-2 px-3 rounded-lg transition-all border ${preferences.position === opt.value
+                        ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:text-blue-400 dark:bg-blue-600/20'
+                        : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
+                        }`}
+                      aria-label={opt.label}
+                    >
+                      <Icon size={18} />
+                    </button>
+                  </HoverTooltip>
                 );
               })}
             </div>
@@ -208,15 +209,18 @@ const BrandingPanel: React.FC = () => {
               <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">
                 Avatar
               </label>
-              <button
-                onClick={() => handleUpdatePreferences({ showAvatar: !preferences.showAvatar })}
+              <HoverTooltip label={preferences.showAvatar ? 'Hide avatar' : 'Show avatar'}>
+                <button
+                  onClick={() => handleUpdatePreferences({ showAvatar: !preferences.showAvatar })}
                   className={`text-xs px-2 py-0.5 rounded ${preferences.showAvatar
-                  ? 'bg-blue-600/15 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
-                  : 'bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-500'
-                  }`}
-              >
-                {preferences.showAvatar ? 'Hide' : 'Show'}
-              </button>
+                    ? 'bg-blue-600/15 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
+                    : 'bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-500'
+                    }`}
+                  aria-label={preferences.showAvatar ? 'Hide avatar' : 'Show avatar'}
+                >
+                  {preferences.showAvatar ? 'Hide' : 'Show'}
+                </button>
+              </HoverTooltip>
             </div>
             <div className="flex items-center gap-3">
               <label className="relative w-16 h-16 rounded-full border border-white/10 bg-white/5 overflow-hidden cursor-pointer group">
@@ -243,12 +247,15 @@ const BrandingPanel: React.FC = () => {
               <div className="flex-1 text-[11px] text-neutral-600 dark:text-neutral-500 space-y-1">
                 <p>Use a square image for best results. Supported formats: PNG, JPG, SVG.</p>
                 {info.avatarUrl && (
-                  <button
-                    onClick={handleAvatarClear}
-                    className="text-xs text-neutral-400 hover:text-red-400 transition-colors"
-                  >
-                    Remove avatar
-                  </button>
+                  <HoverTooltip label="Remove avatar">
+                    <button
+                      onClick={handleAvatarClear}
+                      className="text-xs text-neutral-400 hover:text-red-400 transition-colors"
+                      aria-label="Remove avatar"
+                    >
+                      Remove avatar
+                    </button>
+                  </HoverTooltip>
                 )}
               </div>
             </div>
@@ -275,15 +282,18 @@ const BrandingPanel: React.FC = () => {
               <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">
                 Name
               </label>
-              <button
-                onClick={() => handleUpdatePreferences({ showName: !preferences.showName })}
-                className={`text-xs px-2 py-0.5 rounded ${preferences.showName
-                  ? 'bg-blue-600/20 text-blue-400'
-                  : 'bg-white/5 text-neutral-500'
-                  }`}
-              >
-                {preferences.showName ? 'Hide' : 'Show'}
-              </button>
+              <HoverTooltip label={preferences.showName ? 'Hide name' : 'Show name'}>
+                <button
+                  onClick={() => handleUpdatePreferences({ showName: !preferences.showName })}
+                  className={`text-xs px-2 py-0.5 rounded ${preferences.showName
+                    ? 'bg-blue-600/20 text-blue-400'
+                    : 'bg-white/5 text-neutral-500'
+                    }`}
+                  aria-label={preferences.showName ? 'Hide name' : 'Show name'}
+                >
+                  {preferences.showName ? 'Hide' : 'Show'}
+                </button>
+              </HoverTooltip>
             </div>
             <input
               type="text"
@@ -300,15 +310,18 @@ const BrandingPanel: React.FC = () => {
               <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">
                 Website
               </label>
-              <button
-                onClick={() => handleUpdatePreferences({ showWebsite: !preferences.showWebsite })}
-                className={`text-xs px-2 py-0.5 rounded ${preferences.showWebsite
-                  ? 'bg-blue-600/20 text-blue-400'
-                  : 'bg-white/5 text-neutral-500'
-                  }`}
-              >
-                {preferences.showWebsite ? 'Show' : 'Hide'}
-              </button>
+              <HoverTooltip label={preferences.showWebsite ? 'Hide website' : 'Show website'}>
+                <button
+                  onClick={() => handleUpdatePreferences({ showWebsite: !preferences.showWebsite })}
+                  className={`text-xs px-2 py-0.5 rounded ${preferences.showWebsite
+                    ? 'bg-blue-600/20 text-blue-400'
+                    : 'bg-white/5 text-neutral-500'
+                    }`}
+                  aria-label={preferences.showWebsite ? 'Hide website' : 'Show website'}
+                >
+                  {preferences.showWebsite ? 'Hide' : 'Show'}
+                </button>
+              </HoverTooltip>
             </div>
             <input
               type="text"
@@ -325,15 +338,18 @@ const BrandingPanel: React.FC = () => {
               <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">
                 Social Media
               </label>
-              <button
-                onClick={() => handleUpdatePreferences({ showSocial: !preferences.showSocial })}
-                className={`text-xs px-2 py-0.5 rounded ${preferences.showSocial
-                  ? 'bg-blue-600/15 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
-                  : 'bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-500'
-                  }`}
-              >
-                {preferences.showSocial ? 'Hide' : 'Show'}
-              </button>
+              <HoverTooltip label={preferences.showSocial ? 'Hide social media' : 'Show social media'}>
+                <button
+                  onClick={() => handleUpdatePreferences({ showSocial: !preferences.showSocial })}
+                  className={`text-xs px-2 py-0.5 rounded ${preferences.showSocial
+                    ? 'bg-blue-600/15 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400'
+                    : 'bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-500'
+                    }`}
+                  aria-label={preferences.showSocial ? 'Hide social media' : 'Show social media'}
+                >
+                  {preferences.showSocial ? 'Hide' : 'Show'}
+                </button>
+              </HoverTooltip>
             </div>
             <div className="space-y-2">
               {SOCIAL_PLATFORMS.map((platform) => (
@@ -357,24 +373,30 @@ const BrandingPanel: React.FC = () => {
               <div>
                 <label className="block text-xs text-neutral-600 dark:text-neutral-500 mb-2">Layout</label>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleUpdatePreferences({ socialLayout: 'horizontal' })}
-                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${preferences.socialLayout === 'horizontal'
-                      ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400'
-                      : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
-                      }`}
-                  >
-                    Horizontal
-                  </button>
-                  <button
-                    onClick={() => handleUpdatePreferences({ socialLayout: 'vertical' })}
-                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${preferences.socialLayout === 'vertical'
-                      ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400'
-                      : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
-                      }`}
-                  >
-                    Vertical
-                  </button>
+                  <HoverTooltip label="Horizontal layout">
+                    <button
+                      onClick={() => handleUpdatePreferences({ socialLayout: 'horizontal' })}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${preferences.socialLayout === 'horizontal'
+                        ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400'
+                        : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
+                        }`}
+                      aria-label="Horizontal social layout"
+                    >
+                      Horizontal
+                    </button>
+                  </HoverTooltip>
+                  <HoverTooltip label="Vertical layout">
+                    <button
+                      onClick={() => handleUpdatePreferences({ socialLayout: 'vertical' })}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all border ${preferences.socialLayout === 'vertical'
+                        ? 'bg-blue-600/15 text-blue-700 border-blue-500/50 dark:bg-blue-600/20 dark:text-blue-400'
+                        : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 border-neutral-200 dark:bg-white/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 dark:border-white/5'
+                        }`}
+                      aria-label="Vertical social layout"
+                    >
+                      Vertical
+                    </button>
+                  </HoverTooltip>
                 </div>
               </div>
 

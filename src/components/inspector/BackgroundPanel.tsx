@@ -5,6 +5,7 @@ import SelectField from '../ui/SelectField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import SliderField from '../ui/SliderField';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
+import HoverTooltip from '../ui/HoverTooltip';
 
 const GRADIENT_PRESETS = [
   { from: '#101022', to: '#1f1f3a', name: 'Midnight' },
@@ -29,26 +30,32 @@ const BackgroundPanel: React.FC = () => {
       <div>
         <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-3">Type</label>
         <div className="flex gap-2 p-1 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-          <button
-            onClick={() => setBackground({ type: 'solid' })}
-            className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
-              background.type === 'solid'
-                ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
-                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
-            }`}
-          >
-            Solid
-          </button>
-          <button
-            onClick={() => setBackground({ type: 'gradient' })}
-            className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
-              background.type === 'gradient'
-                ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
-                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
-            }`}
-          >
-            Gradient
-          </button>
+          <HoverTooltip label="Solid background">
+            <button
+              onClick={() => setBackground({ type: 'solid' })}
+              className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                background.type === 'solid'
+                  ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
+              }`}
+              aria-label="Solid background"
+            >
+              Solid
+            </button>
+          </HoverTooltip>
+          <HoverTooltip label="Gradient background">
+            <button
+              onClick={() => setBackground({ type: 'gradient' })}
+              className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                background.type === 'gradient'
+                  ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
+              }`}
+              aria-label="Gradient background"
+            >
+              Gradient
+            </button>
+          </HoverTooltip>
         </div>
       </div>
 
@@ -75,17 +82,18 @@ const BackgroundPanel: React.FC = () => {
           <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-3">Presets</label>
             <div className="grid grid-cols-5 gap-2">
               {GRADIENT_PRESETS.map((preset, i) => (
-                <button
-                  key={i}
-                  onClick={() => setBackground({
-                    gradient: { ...background.gradient, from: preset.from, to: preset.to }
-                  })}
-                  className="w-full aspect-square rounded-lg border border-white/10 hover:border-white/40 transition-all hover:scale-105 shadow-sm"
-                  style={{
-                    background: `linear-gradient(135deg, ${preset.from}, ${preset.to})`
-                  }}
-                  title={preset.name}
-                />
+                <HoverTooltip key={i} label={preset.name}>
+                  <button
+                    onClick={() => setBackground({
+                      gradient: { ...background.gradient, from: preset.from, to: preset.to }
+                    })}
+                    className="w-full aspect-square rounded-lg border border-white/10 hover:border-white/40 transition-all hover:scale-105 shadow-sm"
+                    style={{
+                      background: `linear-gradient(135deg, ${preset.from}, ${preset.to})`
+                    }}
+                    aria-label={preset.name}
+                  />
+                </HoverTooltip>
               ))}
             </div>
           </div>
@@ -178,30 +186,36 @@ const BackgroundPanel: React.FC = () => {
             <div>
               <label className="block text-[10px] font-medium text-neutral-600 dark:text-neutral-500 uppercase tracking-wider mb-2">Position</label>
               <div className="flex gap-2 p-1 bg-neutral-100 border border-neutral-200 rounded-lg dark:bg-white/5 dark:border-white/5">
-                <button
-                  onClick={() => setBackground({
-                    brandStrip: { ...background.brandStrip, position: 'top' }
-                  })}
-                  className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
-                    background.brandStrip.position === 'top'
-                      ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
-                  }`}
-                >
-                  Top
-                </button>
-                <button
-                  onClick={() => setBackground({
-                    brandStrip: { ...background.brandStrip, position: 'bottom' }
-                  })}
-                  className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
-                    background.brandStrip.position === 'bottom'
-                      ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
-                  }`}
-                >
-                  Bottom
-                </button>
+                <HoverTooltip label="Place strip at top">
+                  <button
+                    onClick={() => setBackground({
+                      brandStrip: { ...background.brandStrip, position: 'top' }
+                    })}
+                    className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                      background.brandStrip.position === 'top'
+                        ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
+                    }`}
+                    aria-label="Strip top"
+                  >
+                    Top
+                  </button>
+                </HoverTooltip>
+                <HoverTooltip label="Place strip at bottom">
+                  <button
+                    onClick={() => setBackground({
+                      brandStrip: { ...background.brandStrip, position: 'bottom' }
+                    })}
+                    className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
+                      background.brandStrip.position === 'bottom'
+                        ? 'bg-blue-600/20 text-blue-700 border border-blue-500/30 dark:bg-neutral-700 dark:text-white dark:border-transparent shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/5'
+                    }`}
+                    aria-label="Strip bottom"
+                  >
+                    Bottom
+                  </button>
+                </HoverTooltip>
               </div>
             </div>
 

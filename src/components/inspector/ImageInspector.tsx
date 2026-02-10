@@ -4,6 +4,7 @@ import type { ImageElement } from '../../types';
 import NumberField from '../ui/NumberField';
 import SliderField from '../ui/SliderField';
 import SelectField from '../ui/SelectField';
+import HoverTooltip from '../ui/HoverTooltip';
 
 interface ImageInspectorProps {
     element: ImageElement;
@@ -21,16 +22,20 @@ const ImageInspector: React.FC<ImageInspectorProps> = ({ element }) => {
             {/* Dimensions (Read-only for now, or editable?) */}
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Width</label>
-                    <div className="px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-md text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-white/5 cursor-not-allowed">
-                        {Math.round(element.width)}px
-                    </div>
+                <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Width</label>
+                    <HoverTooltip label="Image width">
+                        <div className="px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-md text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-white/5 cursor-not-allowed">
+                            {Math.round(element.width)}px
+                        </div>
+                    </HoverTooltip>
                 </div>
                 <div>
                     <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Height</label>
-                    <div className="px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-md text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-white/5 cursor-not-allowed">
-                        {Math.round(element.height)}px
-                    </div>
+                    <HoverTooltip label="Image height">
+                        <div className="px-3 py-2 bg-neutral-100 dark:bg-white/5 rounded-md text-sm text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-white/5 cursor-not-allowed">
+                            {Math.round(element.height)}px
+                        </div>
+                    </HoverTooltip>
                 </div>
             </div>
 
@@ -39,26 +44,34 @@ const ImageInspector: React.FC<ImageInspectorProps> = ({ element }) => {
                 <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">
                     Opacity: {Math.round(element.props.opacity * 100)}%
                 </label>
-                <SliderField
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={element.props.opacity}
-                    onValueChange={(v) => updateProps({ opacity: v })}
-                    ariaLabel="Opacity"
-                />
+                <HoverTooltip label="Image opacity">
+                    <div>
+                        <SliderField
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={element.props.opacity}
+                            onValueChange={(v) => updateProps({ opacity: v })}
+                            ariaLabel="Opacity"
+                        />
+                    </div>
+                </HoverTooltip>
             </div>
 
             {/* Corner Radius */}
             <div>
                 <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Corner Radius</label>
-                <NumberField
-                    value={element.props.cornerRadius}
-                    onChange={(v) => updateProps({ cornerRadius: typeof v === 'number' ? v : 0 })}
-                    min={0}
-                    max={100}
-                    step={1}
-                />
+                <HoverTooltip label="Image corner radius">
+                    <div>
+                        <NumberField
+                            value={element.props.cornerRadius}
+                            onChange={(v) => updateProps({ cornerRadius: typeof v === 'number' ? v : 0 })}
+                            min={0}
+                            max={100}
+                            step={1}
+                        />
+                    </div>
+                </HoverTooltip>
             </div>
 
             {/* Shadow */}
@@ -66,30 +79,38 @@ const ImageInspector: React.FC<ImageInspectorProps> = ({ element }) => {
                 <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">
                     Shadow Blur: {element.props.shadow.blur}
                 </label>
-                <SliderField
-                    min={0}
-                    max={64}
-                    step={1}
-                    value={element.props.shadow.blur}
-                    onValueChange={(v) =>
-                        updateProps({ shadow: { ...element.props.shadow, blur: v } })
-                    }
-                    ariaLabel="Shadow blur"
-                />
+                <HoverTooltip label="Shadow blur">
+                    <div>
+                        <SliderField
+                            min={0}
+                            max={64}
+                            step={1}
+                            value={element.props.shadow.blur}
+                            onValueChange={(v) =>
+                                updateProps({ shadow: { ...element.props.shadow, blur: v } })
+                            }
+                            ariaLabel="Shadow blur"
+                        />
+                    </div>
+                </HoverTooltip>
             </div>
 
             {/* Fit Mode */}
             <div>
                 <label className="block text-sm text-neutral-600 dark:text-neutral-400 mb-2">Fit Mode</label>
-                <SelectField
-                    value={element.props.fit}
-                    onValueChange={(v) => updateProps({ fit: v as 'cover' | 'contain' | 'fill' })}
-                    options={[
-                        { value: 'contain', label: 'Contain' },
-                        { value: 'cover', label: 'Cover' },
-                        { value: 'fill', label: 'Fill' },
-                    ]}
-                />
+                <HoverTooltip label="Image fit mode">
+                    <div>
+                        <SelectField
+                            value={element.props.fit}
+                            onValueChange={(v) => updateProps({ fit: v as 'cover' | 'contain' | 'fill' })}
+                            options={[
+                                { value: 'contain', label: 'Contain' },
+                                { value: 'cover', label: 'Cover' },
+                                { value: 'fill', label: 'Fill' },
+                            ]}
+                        />
+                    </div>
+                </HoverTooltip>
             </div>
         </div>
     );
