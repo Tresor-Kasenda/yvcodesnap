@@ -327,6 +327,7 @@ export interface UserProfile {
   id: string;
   full_name: string | null;
   subscription_tier: 'free' | 'pro';
+  free_exports_used?: number | null;
   onboarding_completed: boolean;
   onboarding_completed_at: string | null;
   onboarding_use_case: OnboardingUseCase | null;

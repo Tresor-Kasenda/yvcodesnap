@@ -4,6 +4,8 @@ import React, { useEffect, useRef } from 'react';
 type Props = {
   value: number | '' | undefined;
   onChange: (value: number | '') => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   min?: number;
   max?: number;
   step?: number;
@@ -20,6 +22,8 @@ const base =
 const NumberField: React.FC<Props> = ({
   value,
   onChange,
+  onFocus,
+  onBlur,
   min,
   max,
   step = 1,
@@ -49,18 +53,21 @@ const NumberField: React.FC<Props> = ({
   };
 
   const handleBlur = () => {
-    if (value === '' || value === undefined) return;
-    let n = Number(value);
-    if (!Number.isFinite(n)) return;
-    if (min !== undefined) n = Math.max(min, n);
-    if (max !== undefined) n = Math.min(max, n);
-    // Snap to step if integer step
-    if (step && Number.isFinite(step)) {
-      const decimals = String(step).includes('.') ? String(step).split('.')[1].length : 0;
-      const snapped = Math.round(n / step) * step;
-      n = Number(snapped.toFixed(decimals));
+    if (value !== '' && value !== undefined) {
+      let n = Number(value);
+      if (Number.isFinite(n)) {
+        if (min !== undefined) n = Math.max(min, n);
+        if (max !== undefined) n = Math.min(max, n);
+        // Snap to step if integer step
+        if (step && Number.isFinite(step)) {
+          const decimals = String(step).includes('.') ? String(step).split('.')[1].length : 0;
+          const snapped = Math.round(n / step) * step;
+          n = Number(snapped.toFixed(decimals));
+        }
+        onChange(n);
+      }
     }
-    onChange(n);
+    onBlur?.();
   };
 
   const hasPrefix = Boolean(prefix);
@@ -178,6 +185,7 @@ const NumberField: React.FC<Props> = ({
         pattern="^-?[0-9]*[.,]?[0-9]*$"
         value={displayValue}
         onChange={handleInput}
+        onFocus={onFocus}
         onBlur={handleBlur}
         min={min}
         max={max}

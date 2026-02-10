@@ -24,6 +24,7 @@ interface TopBarProps {
 }
 
 const FREE_PLAN_WATERMARK_TEXT = 'Made with YvCode';
+const FREE_PLAN_EXPORT_LIMIT = 4;
 
 const loadImageFromDataUrl = (dataUrl: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -129,7 +130,7 @@ const TopBar: React.FC<TopBarProps> = ({
   } = useCanvasStore();
 
   const { addRecentSnap } = useRecentSnapsStore();
-  const { user, subscription } = useAuthStore();
+  const { user, profile, subscription, consumeFreeExportSlot } = useAuthStore();
   const { saveSnapToCloud, updateCloudSnap } = useSyncStore();
 
   const isFreeCloudLimitReached = Boolean(
@@ -137,6 +138,13 @@ const TopBar: React.FC<TopBarProps> = ({
     && subscription.tier === 'free'
     && subscription.snap_limit !== -1
     && subscription.current_snap_count >= subscription.snap_limit
+  );
+  const freeExportsUsed = Math.max(0, Number(profile?.free_exports_used ?? 0));
+  const remainingFreeExports = Math.max(0, FREE_PLAN_EXPORT_LIMIT - freeExportsUsed);
+  const isFreeExportLimitReached = Boolean(
+    user
+    && subscription.tier === 'free'
+    && remainingFreeExports <= 0
   );
 
   const aspectOptions = useMemo(() => {
@@ -171,6 +179,12 @@ const TopBar: React.FC<TopBarProps> = ({
     const stage = stageRef.current;
     if (!stage) {
       toast.error('Canvas not ready to export');
+      return;
+    }
+    if (isFreeExportLimitReached) {
+      setShowExportMenu(false);
+      setShowUpgradeModal(true);
+      toast.error(`Free plan export limit reached (${FREE_PLAN_EXPORT_LIMIT} exports). Upgrade to Pro for unlimited exports.`);
       return;
     }
 
@@ -219,6 +233,19 @@ const TopBar: React.FC<TopBarProps> = ({
       } catch (error) {
         console.error('Unable to apply free plan watermark:', error);
       }
+
+      const quota = await consumeFreeExportSlot();
+      if (quota.error) {
+        toast.error(quota.error);
+        return;
+      }
+      if (!quota.allowed) {
+        setShowExportMenu(false);
+        setShowUpgradeModal(true);
+        const limit = quota.limit > 0 ? quota.limit : FREE_PLAN_EXPORT_LIMIT;
+        toast.error(`Free plan export limit reached (${limit} exports). Upgrade to Pro for unlimited exports.`);
+        return;
+      }
     }
 
     // Download
@@ -229,7 +256,15 @@ const TopBar: React.FC<TopBarProps> = ({
     setShowExportMenu(false);
     addRecentSnap(snap);
     toast.success(`Exported as ${format.toUpperCase()}`);
-  }, [stageRef, snap, addRecentSnap, user, subscription.tier]);
+  }, [
+    stageRef,
+    snap,
+    addRecentSnap,
+    user,
+    subscription.tier,
+    consumeFreeExportSlot,
+    isFreeExportLimitReached,
+  ]);
 
   const handleExportJSON = useCallback(() => {
     try {
@@ -661,6 +696,11 @@ const TopBar: React.FC<TopBarProps> = ({
                     <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
                       Free plan exports include a watermark
                     </p>
+                    <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-400">
+                      {remainingFreeExports > 0
+                        ? `${remainingFreeExports} export(s) left on Free`
+                        : `Free export limit reached (${FREE_PLAN_EXPORT_LIMIT})`}
+                    </p>
                   </div>
                 )}
 
@@ -682,7 +722,8 @@ const TopBar: React.FC<TopBarProps> = ({
 
                   <button
                     onClick={() => handleExportImage('png', 2, exportTransparent)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-100 dark:bg-white/3 hover:bg-neutral-200 dark:hover:bg-white/8 border border-neutral-200 dark:border-white/2 hover:border-neutral-300 dark:hover:border-white/10 transition-all group active:scale-[0.98]"
+                    disabled={isFreeExportLimitReached}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-100 dark:bg-white/3 hover:bg-neutral-200 dark:hover:bg-white/8 border border-neutral-200 dark:border-white/2 hover:border-neutral-300 dark:hover:border-white/10 transition-all group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-100 disabled:dark:hover:bg-white/3"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-100 to-blue-200 dark:from-blue-500/10 dark:to-blue-600/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -697,7 +738,8 @@ const TopBar: React.FC<TopBarProps> = ({
 
                   <button
                     onClick={() => handleExportImage('jpeg', 2, exportTransparent)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-100 dark:bg-white/3 hover:bg-neutral-200 dark:hover:bg-white/8 border border-neutral-200 dark:border-white/2 hover:border-neutral-300 dark:hover:border-white/10 transition-all group active:scale-[0.98]"
+                    disabled={isFreeExportLimitReached}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-neutral-100 dark:bg-white/3 hover:bg-neutral-200 dark:hover:bg-white/8 border border-neutral-200 dark:border-white/2 hover:border-neutral-300 dark:hover:border-white/10 transition-all group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-100 disabled:dark:hover:bg-white/3"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-linear-to-br from-purple-100 to-purple-200 dark:from-purple-500/10 dark:to-purple-600/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -710,6 +752,20 @@ const TopBar: React.FC<TopBarProps> = ({
                     </div>
                   </button>
                 </div>
+
+                {user && subscription.tier === 'free' && isFreeExportLimitReached && (
+                  <div className="px-2 pt-2">
+                    <button
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        setShowUpgradeModal(true);
+                      }}
+                      className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl bg-amber-100 dark:bg-amber-500/10 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-500/50 transition-all active:scale-[0.98]"
+                    >
+                      <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Upgrade to Pro to keep exporting</span>
+                    </button>
+                  </div>
+                )}
 
                 <div className="h-px bg-linear-to-r from-transparent via-neutral-200 dark:via-white/10 to-transparent my-2" />
 

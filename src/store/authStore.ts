@@ -24,6 +24,13 @@ export interface AuthState {
   completeOnboarding: (preferences: OnboardingPreferences) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   fetchSubscription: () => Promise<void>;
+  consumeFreeExportSlot: () => Promise<{
+    allowed: boolean;
+    used: number;
+    limit: number;
+    remaining: number;
+    error?: string;
+  }>;
   cleanup: () => void;
 }
 
@@ -57,6 +64,23 @@ const FREE_SUBSCRIPTION: Subscription = {
   tier: 'free',
   snap_limit: 2,
   current_snap_count: 0,
+};
+const FREE_EXPORT_LIMIT = 4;
+const FREE_EXPORT_STORAGE_PREFIX = 'yvcode:free-exports-used:';
+
+const getStoredFreeExportCount = (userId: string): number => {
+  if (typeof window === 'undefined') return 0;
+  const raw = window.localStorage.getItem(`${FREE_EXPORT_STORAGE_PREFIX}${userId}`);
+  const parsed = Number.parseInt(raw ?? '0', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+const setStoredFreeExportCount = (userId: string, value: number) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(
+    `${FREE_EXPORT_STORAGE_PREFIX}${userId}`,
+    String(Math.max(0, Math.floor(value)))
+  );
 };
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
@@ -147,6 +171,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
 
       const nextProfile = (data as UserProfile | null) ?? null;
+      if (nextProfile && user.id) {
+        const serverCount = Math.max(0, Number(nextProfile.free_exports_used ?? 0));
+        const localCount = getStoredFreeExportCount(user.id);
+        if (serverCount > localCount) {
+          setStoredFreeExportCount(user.id, serverCount);
+        }
+      }
       set({
         profile: nextProfile,
         hasCompletedOnboarding: getOnboardingStatus(nextProfile, user),
@@ -358,6 +389,112 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
       set({ subscription: FREE_SUBSCRIPTION });
+    }
+  },
+
+  consumeFreeExportSlot: async () => {
+    const { user, profile } = get();
+    if (!user) {
+      return {
+        allowed: true,
+        used: 0,
+        limit: FREE_EXPORT_LIMIT,
+        remaining: FREE_EXPORT_LIMIT,
+      };
+    }
+
+    const tier = profile?.subscription_tier ?? 'free';
+    const profileUsed = Math.max(0, Number(profile?.free_exports_used ?? 0));
+    const localUsed = getStoredFreeExportCount(user.id);
+    const baseUsed = Math.max(profileUsed, localUsed);
+
+    if (tier === 'pro') {
+      return {
+        allowed: true,
+        used: baseUsed,
+        limit: -1,
+        remaining: -1,
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('consume_free_export_slot');
+      if (error) {
+        throw error;
+      }
+
+      const payload = (data ?? {}) as {
+        allowed?: boolean;
+        used?: number;
+        limit?: number;
+        remaining?: number;
+      };
+
+      const used = Math.max(0, Number(payload.used ?? baseUsed));
+      const limit = Number(payload.limit ?? FREE_EXPORT_LIMIT);
+      const remaining = limit === -1 ? -1 : Math.max(0, Number(payload.remaining ?? Math.max(0, limit - used)));
+      const allowed = payload.allowed === true;
+
+      setStoredFreeExportCount(user.id, used);
+      set((state) => ({
+        profile: state.profile
+          ? { ...state.profile, free_exports_used: used }
+          : state.profile,
+      }));
+
+      return {
+        allowed,
+        used,
+        limit,
+        remaining,
+      };
+    } catch (error) {
+      // If RPC or schema is not yet available, keep enforcing in client as fallback.
+      const normalized = getErrorMessage(error).toLowerCase();
+      const canFallback =
+        normalized.includes('consume_free_export_slot') ||
+        normalized.includes('function') ||
+        normalized.includes('schema cache');
+
+      if (!canFallback) {
+        return {
+          allowed: false,
+          used: baseUsed,
+          limit: FREE_EXPORT_LIMIT,
+          remaining: Math.max(0, FREE_EXPORT_LIMIT - baseUsed),
+          error: getErrorMessage(error),
+        };
+      }
+
+      if (baseUsed >= FREE_EXPORT_LIMIT) {
+        return {
+          allowed: false,
+          used: baseUsed,
+          limit: FREE_EXPORT_LIMIT,
+          remaining: 0,
+        };
+      }
+
+      const nextUsed = baseUsed + 1;
+      const remaining = Math.max(0, FREE_EXPORT_LIMIT - nextUsed);
+      setStoredFreeExportCount(user.id, nextUsed);
+      set((state) => ({
+        profile: state.profile
+          ? { ...state.profile, free_exports_used: nextUsed }
+          : state.profile,
+      }));
+
+      await supabase
+        .from('profiles')
+        .update({ free_exports_used: nextUsed })
+        .eq('id', user.id);
+
+      return {
+        allowed: true,
+        used: nextUsed,
+        limit: FREE_EXPORT_LIMIT,
+        remaining,
+      };
     }
   },
 

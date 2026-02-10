@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
+import { Circle, Hash, Minus, RotateCw, Square } from 'lucide-react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { ShapeElement } from '../../types';
-import SliderField from '../ui/SliderField';
+import NumberField from '../ui/NumberField';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import AccessibleColorPicker from '../ui/AccessibleColorPicker';
 
-const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-2';
-const INPUT_CLASS =
-  'w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none';
-const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-sm focus:outline-none font-mono';
-const SEGMENT_BUTTON_BASE = 'flex-1 py-2 rounded-md text-[10px] font-medium transition-all';
+const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-1.5';
+const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-[11px] focus:outline-none font-mono';
+const SEGMENT_BUTTON_BASE = 'flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all';
 const SEGMENT_BUTTON_ACTIVE = 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm';
 const SEGMENT_BUTTON_IDLE = 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/5';
+const PREFIX_ICON_CLASS = 'h-3 w-3';
 
 const clampMin = (value: number, fallback: number, min: number) => {
   if (!Number.isFinite(value)) return fallback;
@@ -163,88 +163,88 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
   const displayHeight = isLine ? lineSize.height : height;
   const displayX = isLine ? activeLinePoint.x : element.x;
   const displayY = isLine ? activeLinePoint.y : element.y;
+  const rectangleRadiusMax = Math.max(0, Math.floor(Math.min(width, height) / 2));
+  const polygonRadius = Math.max(1, Math.round(Math.min(width, height) / 2));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
         <label className={LABEL_CLASS}>Geometry</label>
         <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className={LABEL_CLASS}>X</label>
-            <input
-              type="number"
-              value={Math.round(displayX)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (isLine) {
-                  updateLineActiveCoord('x', next);
-                } else {
-                  updatePosition({ x: next });
-                }
-              }}
-              onBlur={saveToHistory}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div>
-            <label className={LABEL_CLASS}>Y</label>
-            <input
-              type="number"
-              value={Math.round(displayY)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (isLine) {
-                  updateLineActiveCoord('y', next);
-                } else {
-                  updatePosition({ y: next });
-                }
-              }}
-              onBlur={saveToHistory}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div>
-            <label className={LABEL_CLASS}>W</label>
-            <input
-              type="number"
-              value={Math.round(displayWidth)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (isLine) {
-                  updateLineSize('width', next);
-                } else {
-                  updateSize({ width: clampMin(next, width, 1) });
-                }
-              }}
-              onBlur={saveToHistory}
-              className={INPUT_CLASS}
-            />
-          </div>
-          <div>
-            <label className={LABEL_CLASS}>H</label>
-            <input
-              type="number"
-              value={Math.round(displayHeight)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (isLine) {
-                  updateLineSize('height', next);
-                } else {
-                  updateSize({ height: clampMin(next, height, 1) });
-                }
-              }}
-              onBlur={saveToHistory}
-              className={INPUT_CLASS}
-            />
-          </div>
+          <NumberField
+            value={Math.round(displayX)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : displayX;
+              if (isLine) {
+                updateLineActiveCoord('x', next);
+              } else {
+                updatePosition({ x: next });
+              }
+            }}
+            onBlur={saveToHistory}
+            prefix="X"
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
+          <NumberField
+            value={Math.round(displayY)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : displayY;
+              if (isLine) {
+                updateLineActiveCoord('y', next);
+              } else {
+                updatePosition({ y: next });
+              }
+            }}
+            onBlur={saveToHistory}
+            prefix="Y"
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
+          <NumberField
+            value={Math.round(displayWidth)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : displayWidth;
+              if (isLine) {
+                updateLineSize('width', next);
+              } else {
+                updateSize({ width: clampMin(next, width, 1) });
+              }
+            }}
+            onBlur={saveToHistory}
+            min={1}
+            prefix="W"
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
+          <NumberField
+            value={Math.round(displayHeight)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : displayHeight;
+              if (isLine) {
+                updateLineSize('height', next);
+              } else {
+                updateSize({ height: clampMin(next, height, 1) });
+              }
+            }}
+            onBlur={saveToHistory}
+            min={1}
+            prefix="H"
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
         </div>
       </div>
 
       {isLine && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
             <label className={LABEL_CLASS}>Active Endpoint</label>
-            <div className="flex gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
+            <div className="flex gap-1.5 p-0.5 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
               <button
                 onClick={() => setLineEndpointSelection(element.id, 'start')}
                 className={`${SEGMENT_BUTTON_BASE} ${activeLineEndpoint === 'start' ? SEGMENT_BUTTON_ACTIVE : SEGMENT_BUTTON_IDLE}`}
@@ -263,151 +263,214 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
           <div>
             <label className={LABEL_CLASS}>Endpoints</label>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={LABEL_CLASS}>Start X</label>
-                <input
-                  type="number"
-                  value={Math.round(lineStart.x)}
-                  onFocus={() => setLineEndpointSelection(element.id, 'start')}
-                  onChange={(e) => updateLineStart('x', Number(e.target.value))}
-                  onBlur={saveToHistory}
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div>
-                <label className={LABEL_CLASS}>Start Y</label>
-                <input
-                  type="number"
-                  value={Math.round(lineStart.y)}
-                  onFocus={() => setLineEndpointSelection(element.id, 'start')}
-                  onChange={(e) => updateLineStart('y', Number(e.target.value))}
-                  onBlur={saveToHistory}
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div>
-                <label className={LABEL_CLASS}>End X</label>
-                <input
-                  type="number"
-                  value={Math.round(lineEnd.x)}
-                  onFocus={() => setLineEndpointSelection(element.id, 'end')}
-                  onChange={(e) => updateLineEnd('x', Number(e.target.value))}
-                  onBlur={saveToHistory}
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div>
-                <label className={LABEL_CLASS}>End Y</label>
-                <input
-                  type="number"
-                  value={Math.round(lineEnd.y)}
-                  onFocus={() => setLineEndpointSelection(element.id, 'end')}
-                  onChange={(e) => updateLineEnd('y', Number(e.target.value))}
-                  onBlur={saveToHistory}
-                  className={INPUT_CLASS}
-                />
-              </div>
+              <NumberField
+                value={Math.round(lineStart.x)}
+                onChange={(v) => updateLineStart('x', typeof v === 'number' ? v : lineStart.x)}
+                onFocus={() => setLineEndpointSelection(element.id, 'start')}
+                onBlur={saveToHistory}
+                prefix="SX"
+                suffix="px"
+                className="w-full"
+                inputClassName="text-[11px]"
+              />
+              <NumberField
+                value={Math.round(lineStart.y)}
+                onChange={(v) => updateLineStart('y', typeof v === 'number' ? v : lineStart.y)}
+                onFocus={() => setLineEndpointSelection(element.id, 'start')}
+                onBlur={saveToHistory}
+                prefix="SY"
+                suffix="px"
+                className="w-full"
+                inputClassName="text-[11px]"
+              />
+              <NumberField
+                value={Math.round(lineEnd.x)}
+                onChange={(v) => updateLineEnd('x', typeof v === 'number' ? v : lineEnd.x)}
+                onFocus={() => setLineEndpointSelection(element.id, 'end')}
+                onBlur={saveToHistory}
+                prefix="EX"
+                suffix="px"
+                className="w-full"
+                inputClassName="text-[11px]"
+              />
+              <NumberField
+                value={Math.round(lineEnd.y)}
+                onChange={(v) => updateLineEnd('y', typeof v === 'number' ? v : lineEnd.y)}
+                onFocus={() => setLineEndpointSelection(element.id, 'end')}
+                onBlur={saveToHistory}
+                prefix="EY"
+                suffix="px"
+                className="w-full"
+                inputClassName="text-[11px]"
+              />
             </div>
           </div>
         </div>
       )}
 
-      <div>
-        <label className={LABEL_CLASS}>
-          Rotation: {Math.round(((isLine ? lineRotation : element.rotation || 0) * 10)) / 10}°
-        </label>
-        <SliderField
-          min={-180}
-          max={180}
-          step={1}
-          value={isLine ? lineRotation : element.rotation || 0}
-          onValueChange={(value) => {
-            if (isLine) {
-              updateLineRotation(value);
-            } else {
-              updateRotation(value);
-            }
-          }}
-          ariaLabel="Shape rotation"
-        />
-      </div>
-
-      <div>
-        <label className={LABEL_CLASS}>Padding: {props.padding ?? 0}px</label>
-        <SliderField
-          min={0}
-          max={80}
-          step={1}
-          value={props.padding ?? 0}
-          onValueChange={(value) => updateProps({ padding: value })}
-          ariaLabel="Shape padding"
-        />
-      </div>
-
-      {props.kind === 'rectangle' && (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
-          <label className={LABEL_CLASS}>Radius: {Math.round(props.cornerRadius ?? 6)}px</label>
-          <SliderField
-            min={0}
-            max={120}
+          <label className={LABEL_CLASS}>
+            Rotation: {Math.round(((isLine ? lineRotation : element.rotation || 0) * 10)) / 10}°
+          </label>
+          <NumberField
+            value={Math.round(isLine ? lineRotation : element.rotation || 0)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : isLine ? lineRotation : element.rotation || 0;
+              if (isLine) {
+                updateLineRotation(next);
+              } else {
+                updateRotation(next);
+              }
+            }}
+            onBlur={saveToHistory}
+            min={-180}
+            max={180}
             step={1}
-            value={props.cornerRadius ?? 6}
-            onValueChange={(value) => updateProps({ cornerRadius: value })}
-            ariaLabel="Rectangle corner radius"
+            prefix={<RotateCw className={PREFIX_ICON_CLASS} />}
+            suffix="°"
+            className="w-full"
+            inputClassName="text-[11px]"
           />
         </div>
-      )}
+
+        <div>
+          <label className={LABEL_CLASS}>Padding: {props.padding ?? 0}px</label>
+          <NumberField
+            value={Math.round(props.padding ?? 0)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : props.padding ?? 0;
+              updateProps({ padding: clampMin(next, props.padding ?? 0, 0) });
+            }}
+            onBlur={saveToHistory}
+            min={0}
+            max={80}
+            step={1}
+            prefix={<Square className={PREFIX_ICON_CLASS} />}
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
+        </div>
+
+        {props.kind === 'rectangle' && (
+          <div>
+            <label className={LABEL_CLASS}>Radius: {Math.round(props.cornerRadius ?? 6)}px</label>
+            <NumberField
+              value={Math.round(props.cornerRadius ?? 6)}
+              onChange={(v) => {
+                const next = typeof v === 'number' ? v : props.cornerRadius ?? 6;
+                updateProps({ cornerRadius: Math.max(0, Math.min(rectangleRadiusMax, next)) });
+              }}
+              onBlur={saveToHistory}
+              min={0}
+              max={rectangleRadiusMax}
+              step={1}
+              prefix={<Circle className={PREFIX_ICON_CLASS} />}
+              suffix="px"
+              className="w-full"
+              inputClassName="text-[11px]"
+            />
+          </div>
+        )}
+
+        {isPolygonLike && (
+          <div>
+            <label className={LABEL_CLASS}>Radius: {polygonRadius}px</label>
+            <NumberField
+              value={polygonRadius}
+              onChange={(v) => {
+                const next = typeof v === 'number' ? v : polygonRadius;
+                updatePolygonRadius(next);
+              }}
+              onBlur={saveToHistory}
+              min={1}
+              max={800}
+              step={1}
+              prefix={<Circle className={PREFIX_ICON_CLASS} />}
+              suffix="px"
+              className="w-full"
+              inputClassName="text-[11px]"
+            />
+          </div>
+        )}
+
+        <div>
+          <label className={LABEL_CLASS}>Stroke Width: {props.strokeWidth}px</label>
+          <NumberField
+            value={Math.round(props.strokeWidth)}
+            onChange={(v) => {
+              const next = typeof v === 'number' ? v : props.strokeWidth;
+              updateProps({ strokeWidth: clampMin(next, props.strokeWidth, 1) });
+            }}
+            onBlur={saveToHistory}
+            min={1}
+            max={24}
+            step={1}
+            prefix={<Minus className={PREFIX_ICON_CLASS} />}
+            suffix="px"
+            className="w-full"
+            inputClassName="text-[11px]"
+          />
+        </div>
+
+        {isPolygonLike && (
+          <div>
+            <label className={LABEL_CLASS}>{props.kind === 'star' ? 'Points' : 'Sides'}: {props.sides || 5}</label>
+            <NumberField
+              value={props.sides || 5}
+              onChange={(v) => {
+                const next = typeof v === 'number' ? v : props.sides || 5;
+                updateProps({ sides: Math.max(3, Math.min(10, Math.round(next))) });
+              }}
+              onBlur={saveToHistory}
+              min={3}
+              max={10}
+              step={1}
+              prefix={<Hash className={PREFIX_ICON_CLASS} />}
+              className="w-full"
+              inputClassName="text-[11px]"
+            />
+          </div>
+        )}
+      </div>
 
       {props.kind === 'ellipse' && (
         <div>
           <label className={LABEL_CLASS}>Radius</label>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={LABEL_CLASS}>Radius X</label>
-              <input
-                type="number"
-                value={Math.round(width / 2)}
-                onChange={(e) => updateEllipseRadius('x', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>Radius Y</label>
-              <input
-                type="number"
-                value={Math.round(height / 2)}
-                onChange={(e) => updateEllipseRadius('y', Number(e.target.value))}
-                onBlur={saveToHistory}
-                className={INPUT_CLASS}
-              />
-            </div>
+            <NumberField
+              value={Math.round(width / 2)}
+              onChange={(v) => updateEllipseRadius('x', typeof v === 'number' ? v : width / 2)}
+              onBlur={saveToHistory}
+              min={1}
+              prefix="RX"
+              suffix="px"
+              className="w-full"
+              inputClassName="text-[11px]"
+            />
+            <NumberField
+              value={Math.round(height / 2)}
+              onChange={(v) => updateEllipseRadius('y', typeof v === 'number' ? v : height / 2)}
+              onBlur={saveToHistory}
+              min={1}
+              prefix="RY"
+              suffix="px"
+              className="w-full"
+              inputClassName="text-[11px]"
+            />
           </div>
-        </div>
-      )}
-
-      {isPolygonLike && (
-        <div>
-          <label className={LABEL_CLASS}>Radius: {Math.round(Math.min(width, height) / 2)}px</label>
-          <SliderField
-            min={1}
-            max={800}
-            step={1}
-            value={Math.max(1, Math.round(Math.min(width, height) / 2))}
-            onValueChange={updatePolygonRadius}
-            ariaLabel={`${props.kind} radius`}
-          />
         </div>
       )}
 
       <div>
         <label className={LABEL_CLASS}>Stroke</label>
-        <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
+        <div className="flex gap-2 items-center p-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
           <AccessibleColorPicker
             value={props.stroke}
             onChange={(color) => updateProps({ stroke: color })}
             ariaLabel="Shape stroke color"
-            className="h-7 w-7"
+            className="h-6 w-6"
           />
           <input
             type="text"
@@ -418,21 +481,9 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
         </div>
       </div>
 
-      <div>
-        <label className={LABEL_CLASS}>Stroke Width: {props.strokeWidth}px</label>
-        <SliderField
-          min={1}
-          max={24}
-          step={1}
-          value={props.strokeWidth}
-          onValueChange={(value) => updateProps({ strokeWidth: value })}
-          ariaLabel="Shape stroke width"
-        />
-      </div>
-
       {canFill && (
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1.5">
             <label className={LABEL_CLASS}>Fill</label>
             <ToggleSwitch
               checked={!!props.fill && props.fill !== 'transparent'}
@@ -446,12 +497,12 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
               ariaLabel="Toggle fill"
             />
           </div>
-          <div className="flex gap-2 items-center p-2 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
+          <div className="flex gap-2 items-center p-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5">
             <AccessibleColorPicker
               value={props.fill && props.fill !== 'transparent' ? props.fill : '#60a5f4'}
               onChange={(color) => updateProps({ fill: color })}
               ariaLabel="Shape fill color"
-              className="h-7 w-7"
+              className="h-6 w-6"
             />
             <input
               type="text"
@@ -463,19 +514,6 @@ const ShapeInspector: React.FC<{ element: ShapeElement }> = ({ element }) => {
         </div>
       )}
 
-      {isPolygonLike && (
-        <div>
-          <label className={LABEL_CLASS}>{props.kind === 'star' ? 'Points' : 'Sides'}: {props.sides || 5}</label>
-          <SliderField
-            min={3}
-            max={10}
-            step={1}
-            value={props.sides || 5}
-            onValueChange={(value) => updateProps({ sides: value })}
-            ariaLabel={`${props.kind} sides`}
-          />
-        </div>
-      )}
     </div>
   );
 };

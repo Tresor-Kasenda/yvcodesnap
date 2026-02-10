@@ -5,6 +5,7 @@ import { useCanvasStore } from '../store/canvasStore';
 import { useRecentSnapsStore } from '../store/recentSnapsStore';
 import { Toaster } from 'sonner';
 import { useAppCommands } from '../hooks/useAppCommands';
+import { useAutoSync } from '../hooks/useAutoSync';
 import FontLoader from '../components/FontLoader';
 import TopBar from '../components/TopBar';
 import Inspector from '../components/Inspector';
@@ -21,6 +22,9 @@ export default function Editor() {
     const [showInspector, setShowInspector] = useState(true);
 
     const { commands } = useAppCommands();
+
+    // Auto-sync pour les utilisateurs free avec un snap cloud actif
+    const { isAutoSyncEnabled, isSaving } = useAutoSync();
 
     // Keep the editor in a single scroll context: the page itself should not scroll.
     useEffect(() => {

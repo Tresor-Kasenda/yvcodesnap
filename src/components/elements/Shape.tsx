@@ -12,8 +12,14 @@ interface ShapeProps {
   draggable?: boolean;
 }
 
+type RectangleCorner = 'tl' | 'tr' | 'br' | 'bl';
+
 const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, draggable }) => {
   const [isResizingRectangle, setIsResizingRectangle] = React.useState(false);
+  const [isRectangleHovered, setIsRectangleHovered] = React.useState(false);
+  const [activeRadiusCorner, setActiveRadiusCorner] = React.useState<RectangleCorner | null>(null);
+  const isResizingRectangleRef = React.useRef(false);
+  const isRadiusEditingRef = React.useRef(false);
   const { props, width, height } = element;
   const lineEndpointSelection = useCanvasStore((state) => state.lineEndpointSelection);
   const setLineEndpointSelection = useCanvasStore((state) => state.setLineEndpointSelection);
@@ -51,6 +57,45 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
     if (container) container.style.cursor = '';
   };
 
+  const startRectangleResize = () => {
+    isResizingRectangleRef.current = true;
+    setIsResizingRectangle(true);
+  };
+
+  const stopRectangleResize = () => {
+    isResizingRectangleRef.current = false;
+    setIsResizingRectangle(false);
+  };
+
+  const startRectangleRadiusEdit = (corner: RectangleCorner) => {
+    isRadiusEditingRef.current = true;
+    setActiveRadiusCorner(corner);
+    setIsRectangleHovered(true);
+  };
+
+  const stopRectangleRadiusEdit = () => {
+    isRadiusEditingRef.current = false;
+    setActiveRadiusCorner(null);
+  };
+
+  React.useEffect(() => {
+    const clearResizeState = () => {
+      if (isResizingRectangleRef.current) {
+        stopRectangleResize();
+      }
+      if (isRadiusEditingRef.current) {
+        stopRectangleRadiusEdit();
+      }
+    };
+
+    window.addEventListener('mouseup', clearResizeState);
+    window.addEventListener('touchend', clearResizeState);
+    return () => {
+      window.removeEventListener('mouseup', clearResizeState);
+      window.removeEventListener('touchend', clearResizeState);
+    };
+  }, []);
+
   const common = {
     listening: true,
     onClick: onSelect,
@@ -61,6 +106,10 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
       onSelect();
     },
     draggable: (draggable ?? !element.locked) && !isResizingRectangle,
+    onDragStart: (e: any) => {
+      if (!isResizingRectangleRef.current) return;
+      e.target.stopDrag();
+    },
     onDragEnd: handleDragEnd,
     onDragMoveCapture: () => {
       const stage = (window as any)?.stageRef?.current?.getStage?.();
@@ -203,14 +252,20 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
     const cos = Math.cos(rotationRad);
     const sin = Math.sin(rotationRad);
     const cornerHandleSize = 10;
-    const maxInsetX = Math.max(4, halfW - cornerHandleSize / 2 - 2);
-    const maxInsetY = Math.max(4, halfH - cornerHandleSize / 2 - 2);
-    const cornerPointInset = Math.min(26, maxInsetX, maxInsetY);
 
     const rotateToWorld = (localX: number, localY: number) => ({
       x: cx + localX * cos - localY * sin,
       y: cy + localX * sin + localY * cos,
     });
+
+    const worldToLocal = (worldX: number, worldY: number) => {
+      const dx = worldX - cx;
+      const dy = worldY - cy;
+      return {
+        x: dx * cos + dy * sin,
+        y: -dx * sin + dy * cos,
+      };
+    };
 
     const corners = {
       tl: rotateToWorld(-halfW, -halfH),
@@ -219,21 +274,15 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
       bl: rotateToWorld(-halfW, halfH),
     } as const;
 
-    const cornerOrder = ['tl', 'tr', 'br', 'bl'] as const;
+    const cornerOrder: RectangleCorner[] = ['tl', 'tr', 'br', 'bl'];
     const oppositeCorner = {
       tl: 'br',
       tr: 'bl',
       br: 'tl',
       bl: 'tr',
-    } as const;
-    const defaultSign = {
-      tl: { x: -1, y: -1 },
-      tr: { x: 1, y: -1 },
-      br: { x: 1, y: 1 },
-      bl: { x: -1, y: 1 },
-    } as const;
+    } as Record<RectangleCorner, RectangleCorner>;
 
-    const resizeFromCorner = (corner: typeof cornerOrder[number], worldX: number, worldY: number) => {
+    const resizeFromCorner = (corner: RectangleCorner, worldX: number, worldY: number) => {
       const fixed = corners[oppositeCorner[corner]];
       const fixedToDraggedWorld = { x: worldX - fixed.x, y: worldY - fixed.y };
       const fixedToDraggedLocal = {
@@ -241,15 +290,26 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
         y: -fixedToDraggedWorld.x * sin + fixedToDraggedWorld.y * cos,
       };
 
-      const nextInnerWidth = Math.max(1, Math.abs(fixedToDraggedLocal.x));
-      const nextInnerHeight = Math.max(1, Math.abs(fixedToDraggedLocal.y));
-      const signX = fixedToDraggedLocal.x === 0 ? defaultSign[corner].x : Math.sign(fixedToDraggedLocal.x);
-      const signY = fixedToDraggedLocal.y === 0 ? defaultSign[corner].y : Math.sign(fixedToDraggedLocal.y);
+      // Calculate new dimensions (always positive)
+      let nextInnerWidth = Math.abs(fixedToDraggedLocal.x);
+      let nextInnerHeight = Math.abs(fixedToDraggedLocal.y);
 
+      // Enforce minimum size
+      const minSize = 20;
+      nextInnerWidth = Math.max(minSize, nextInnerWidth);
+      nextInnerHeight = Math.max(minSize, nextInnerHeight);
+
+      // Determine direction based on where the dragged point is relative to fixed point
+      const signX = fixedToDraggedLocal.x >= 0 ? 1 : -1;
+      const signY = fixedToDraggedLocal.y >= 0 ? 1 : -1;
+
+      // Calculate new center position in local space relative to fixed corner
       const localCenterFromFixed = {
         x: signX * nextInnerWidth / 2,
         y: signY * nextInnerHeight / 2,
       };
+
+      // Transform back to world space
       const worldCenter = {
         x: fixed.x + localCenterFromFixed.x * cos - localCenterFromFixed.y * sin,
         y: fixed.y + localCenterFromFixed.x * sin + localCenterFromFixed.y * cos,
@@ -266,13 +326,108 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
       });
     };
 
+    const maxCornerRadius = Math.max(0, Math.min(innerWidth / 2, innerHeight / 2));
     const cornerRadius = Math.max(
       0,
-      Math.min(props.cornerRadius ?? 6, innerWidth / 2, innerHeight / 2)
+      Math.min(props.cornerRadius ?? 0, maxCornerRadius)
     );
 
+    // Position radius handles based on current corner radius
+    // Place them along the diagonal at the radius distance from each corner
+    const getRadiusHandlePosition = (corner: RectangleCorner) => {
+      const effectiveRadius = Math.max(cornerRadius, 16); // Minimum 16px from corner for visibility
+      let localX = 0, localY = 0;
+
+      switch (corner) {
+        case 'tl':
+          localX = -halfW + effectiveRadius;
+          localY = -halfH + effectiveRadius;
+          break;
+        case 'tr':
+          localX = halfW - effectiveRadius;
+          localY = -halfH + effectiveRadius;
+          break;
+        case 'br':
+          localX = halfW - effectiveRadius;
+          localY = halfH - effectiveRadius;
+          break;
+        case 'bl':
+          localX = -halfW + effectiveRadius;
+          localY = halfH - effectiveRadius;
+          break;
+      }
+
+      return { x: localX, y: localY };
+    };
+
+    const radiusHandleWorlds: Record<RectangleCorner, { x: number; y: number }> = {
+      tl: rotateToWorld(getRadiusHandlePosition('tl').x, getRadiusHandlePosition('tl').y),
+      tr: rotateToWorld(getRadiusHandlePosition('tr').x, getRadiusHandlePosition('tr').y),
+      br: rotateToWorld(getRadiusHandlePosition('br').x, getRadiusHandlePosition('br').y),
+      bl: rotateToWorld(getRadiusHandlePosition('bl').x, getRadiusHandlePosition('bl').y),
+    };
+
+    // Get the corner position in local space for each corner
+    const cornerLocals: Record<RectangleCorner, { x: number; y: number }> = {
+      tl: { x: -halfW, y: -halfH },
+      tr: { x: halfW, y: -halfH },
+      br: { x: halfW, y: halfH },
+      bl: { x: -halfW, y: halfH },
+    };
+
+    const getCornerRadiusFromWorldPoint = (corner: RectangleCorner, worldX: number, worldY: number) => {
+      const local = worldToLocal(worldX, worldY);
+      const cornerLocal = cornerLocals[corner];
+
+      // Calculate distance from the corner point along each axis
+      const dx = Math.abs(local.x - cornerLocal.x);
+      const dy = Math.abs(local.y - cornerLocal.y);
+
+      // The radius is the minimum distance along either axis
+      // This ensures the radius curve fits within the rectangle
+      const radiusValue = Math.min(dx, dy);
+
+      // Clamp between 0 and maxCornerRadius
+      return Math.max(0, Math.min(maxCornerRadius, radiusValue));
+    };
+
+    const updateCornerRadiusFromWorldPoint = (corner: RectangleCorner, worldX: number, worldY: number) => {
+      const nextRadius = getCornerRadiusFromWorldPoint(corner, worldX, worldY);
+      onChange({
+        props: {
+          ...props,
+          cornerRadius: Math.round(nextRadius),
+        },
+      });
+    };
+
+    const showRadiusHandles = isSelected && (isRectangleHovered || activeRadiusCorner !== null);
+
     return (
-      <Group {...common}>
+      <Group
+        {...common}
+        onMouseEnter={() => setIsRectangleHovered(true)}
+        onMouseLeave={() => {
+          if (!isRadiusEditingRef.current) {
+            setIsRectangleHovered(false);
+          }
+        }}
+      >
+        <Rect
+          x={cx}
+          y={cy}
+          offsetX={innerWidth / 2}
+          offsetY={innerHeight / 2}
+          width={innerWidth}
+          height={innerHeight}
+          fill={props.fill || 'transparent'}
+          stroke={props.stroke}
+          strokeWidth={strokeWidth}
+          cornerRadius={cornerRadius}
+          rotation={element.rotation}
+          listening={true}
+        />
+
         {isSelected && (
           <Group
             x={cx}
@@ -290,25 +445,9 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
               fillEnabled={false}
               cornerRadius={Math.max(0, Math.min(cornerRadius, halfW, halfH))}
             />
-            {cornerOrder.map((cornerKey) => {
-              const corner = {
-                x: cornerKey === 'tl' || cornerKey === 'bl' ? -halfW : halfW,
-                y: cornerKey === 'tl' || cornerKey === 'tr' ? -halfH : halfH,
-              };
-              return (
-                <Circle
-                  key={`point-${cornerKey}`}
-                  x={corner.x + (corner.x < 0 ? cornerPointInset : -cornerPointInset)}
-                  y={corner.y + (corner.y < 0 ? cornerPointInset : -cornerPointInset)}
-                  radius={7}
-                  fill="#e0f2fe"
-                  stroke={outlineColor}
-                  strokeWidth={2}
-                />
-              );
-            })}
           </Group>
         )}
+
         {isSelected && cornerOrder.map((corner) => {
           const point = corners[corner];
           const cursor = corner === 'tl' || corner === 'br' ? 'nwse-resize' : 'nesw-resize';
@@ -327,25 +466,31 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
               shadowColor="rgba(0,0,0,0.15)"
               shadowBlur={3}
               shadowOffset={{ x: 0, y: 1 }}
-              draggable={!element.locked}
-              onDragStart={(e) => {
-                e.cancelBubble = true;
-                setIsResizingRectangle(true);
-                const parent = e.target.getParent();
-                parent?.stopDrag?.();
-              }}
               onMouseDown={(e) => {
+                if (element.locked) return;
                 e.cancelBubble = true;
-                onSelect();
-              }}
-              onTap={(e) => {
-                e.cancelBubble = true;
-                onSelect();
-              }}
-              onDragMove={(e) => resizeFromCorner(corner, e.target.x(), e.target.y())}
-              onDragEnd={(e) => {
-                resizeFromCorner(corner, e.target.x(), e.target.y());
-                setIsResizingRectangle(false);
+                startRectangleResize();
+
+                const stage = e.target.getStage();
+                if (!stage) return;
+
+                const handleMouseMove = () => {
+                  const pointerPos = stage.getPointerPosition();
+                  if (pointerPos && isResizingRectangleRef.current) {
+                    resizeFromCorner(corner, pointerPos.x, pointerPos.y);
+                  }
+                };
+
+                const handleMouseUp = () => {
+                  stopRectangleResize();
+                  stage.off('mousemove', handleMouseMove);
+                  stage.off('mouseup', handleMouseUp);
+                  const container = stage.container();
+                  if (container) container.style.cursor = '';
+                };
+
+                stage.on('mousemove', handleMouseMove);
+                stage.on('mouseup', handleMouseUp);
               }}
               onMouseEnter={(e) => {
                 const container = e.target.getStage()?.container();
@@ -353,6 +498,7 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
                 e.target.scale({ x: 1.2, y: 1.2 });
               }}
               onMouseLeave={(e) => {
+                if (isResizingRectangleRef.current) return;
                 const container = e.target.getStage()?.container();
                 if (container) container.style.cursor = '';
                 e.target.scale({ x: 1, y: 1 });
@@ -360,20 +506,76 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
             />
           );
         })}
-        <Rect
-          x={cx}
-          y={cy}
-          offsetX={innerWidth / 2}
-          offsetY={innerHeight / 2}
-          width={innerWidth}
-          height={innerHeight}
-          fill={props.fill || 'transparent'}
-          stroke={props.stroke}
-          strokeWidth={strokeWidth}
-          cornerRadius={cornerRadius}
-          rotation={element.rotation}
-          listening={true}
-        />
+
+        {showRadiusHandles && (
+          <>
+            {cornerOrder.map((corner) => {
+              const point = radiusHandleWorlds[corner];
+              const isActive = activeRadiusCorner === corner;
+              return (
+                <React.Fragment key={`radius-handle-${corner}`}>
+                  {/* Visual guide line from corner to handle when active */}
+                  {isActive && (
+                    <Line
+                      points={[corners[corner].x, corners[corner].y, point.x, point.y]}
+                      stroke="#10b981"
+                      strokeWidth={1}
+                      dash={[4, 4]}
+                      listening={false}
+                      opacity={0.5}
+                    />
+                  )}
+                  <Circle
+                    x={point.x}
+                    y={point.y}
+                    radius={isActive ? 7 : 6}
+                    fill={isActive ? "#059669" : "#10b981"}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    shadowColor="rgba(0,0,0,0.2)"
+                    shadowBlur={4}
+                    shadowOffset={{ x: 0, y: 2 }}
+                    onMouseDown={(e) => {
+                      if (element.locked) return;
+                      e.cancelBubble = true;
+                      startRectangleRadiusEdit(corner);
+
+                      const stage = e.target.getStage();
+                      if (!stage) return;
+
+                      const handleMouseMove = () => {
+                        const pointerPos = stage.getPointerPosition();
+                        if (pointerPos && isRadiusEditingRef.current) {
+                          updateCornerRadiusFromWorldPoint(corner, pointerPos.x, pointerPos.y);
+                        }
+                      };
+
+                      const handleMouseUp = () => {
+                        stopRectangleRadiusEdit();
+                        stage.off('mousemove', handleMouseMove);
+                        stage.off('mouseup', handleMouseUp);
+                        const container = stage.container();
+                        if (container) container.style.cursor = '';
+                      };
+
+                      stage.on('mousemove', handleMouseMove);
+                      stage.on('mouseup', handleMouseUp);
+                    }}
+                    onMouseEnter={(e) => {
+                      const container = e.target.getStage()?.container();
+                      if (container) container.style.cursor = 'grab';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isRadiusEditingRef.current) return;
+                      const container = e.target.getStage()?.container();
+                      if (container) container.style.cursor = '';
+                    }}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </>
+        )}
       </Group>
     );
   }
