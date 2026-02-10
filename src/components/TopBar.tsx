@@ -417,7 +417,11 @@ const TopBar: React.FC<TopBarProps> = ({
         if (result.id) {
           setCloudSyncState(result.id, snap);
         }
-        toast.success('Snap saved to cloud!');
+        if (result.queued) {
+          toast.info('Snap saved locally. It will sync to cloud automatically when connection is restored.');
+        } else {
+          toast.success('Snap saved to cloud!');
+        }
         setShowExportMenu(false);
         addRecentSnap(snap, undefined, result.id ?? null);
       }

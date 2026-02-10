@@ -11,7 +11,7 @@ const LOCAL_MIGRATION_FLAG_PREFIX = 'yvcode-local-migration-v1:';
 
 function App() {
   const { initialize, loading, user } = useAuthStore();
-  const { migrateLocalSnaps } = useSyncStore();
+  const { migrateLocalSnaps, initializeLocalFirstSync, flushPendingChanges } = useSyncStore();
   const { recentSnaps } = useRecentSnapsStore();
   const [migrationDone, setMigrationDone] = useState(false);
 
@@ -22,6 +22,20 @@ function App() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Enable local-first sync listeners once on app mount.
+  useEffect(() => {
+    const cleanup = initializeLocalFirstSync();
+    return cleanup;
+  }, [initializeLocalFirstSync]);
+
+  // Flush pending offline changes as soon as the user is available.
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    void flushPendingChanges();
+  }, [user, flushPendingChanges]);
 
   // Load migration flag for the current authenticated user.
   useEffect(() => {

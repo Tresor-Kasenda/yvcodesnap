@@ -17,6 +17,7 @@ interface RecentSnapsState {
   
   // Actions
   addRecentSnap: (snap: Snap, thumbnail?: string, cloudSnapId?: string | null) => void;
+  replaceCloudSnapId: (fromCloudId: string, toCloudId: string) => void;
   removeRecentSnap: (id: string) => void;
   clearRecentSnaps: () => void;
   getRecentSnaps: () => RecentSnapEntry[];
@@ -56,6 +57,20 @@ export const useRecentSnapsStore = create<RecentSnapsState>()(
             recentSnaps: updated.slice(0, state.maxRecent),
           };
         });
+      },
+
+      replaceCloudSnapId: (fromCloudId: string, toCloudId: string) => {
+        if (!fromCloudId || !toCloudId || fromCloudId === toCloudId) {
+          return;
+        }
+
+        set((state) => ({
+          recentSnaps: state.recentSnaps.map((entry) =>
+            entry.cloudSnapId === fromCloudId
+              ? { ...entry, cloudSnapId: toCloudId }
+              : entry
+          ),
+        }));
       },
       
       removeRecentSnap: (id: string) => {
