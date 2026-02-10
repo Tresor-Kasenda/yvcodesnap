@@ -77,7 +77,7 @@ const AccessibleColorPicker: React.FC<AccessibleColorPickerProps> = ({
       <DialogTrigger>
         <Button
           aria-label={ariaLabel}
-          className={`relative h-8 w-8 shrink-0 overflow-hidden rounded border border-neutral-300 dark:border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${className}`}
+          className={`relative h-6 w-6 shrink-0 overflow-hidden rounded border border-neutral-300 dark:border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${className}`}
         >
           <ColorSwatch className="absolute inset-0 rounded-[inherit]" />
         </Button>
