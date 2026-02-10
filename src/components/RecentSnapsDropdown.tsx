@@ -68,7 +68,7 @@ RecentSnapItem.displayName = 'RecentSnapItem';
 const RecentSnapsDropdown: React.FC<RecentSnapsDropdownProps> = ({ isOpen, onClose, anchorRef }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { recentSnaps, removeRecentSnap, clearRecentSnaps } = useRecentSnapsStore();
-  const { setSnap, saveToHistory } = useCanvasStore();
+  const { importSnap, saveToHistory } = useCanvasStore();
   
   // Close on outside click
   useEffect(() => {
@@ -103,9 +103,11 @@ const RecentSnapsDropdown: React.FC<RecentSnapsDropdownProps> = ({ isOpen, onClo
   
   const handleOpenSnap = useCallback((entry: RecentSnapEntry) => {
     saveToHistory();
-    setSnap(entry.snap);
+    importSnap(JSON.stringify(entry.snap), {
+      cloudSnapId: entry.cloudSnapId ?? null,
+    });
     onClose();
-  }, [setSnap, saveToHistory, onClose]);
+  }, [importSnap, saveToHistory, onClose]);
   
   const handleDeleteSnap = useCallback((id: string) => {
     removeRecentSnap(id);

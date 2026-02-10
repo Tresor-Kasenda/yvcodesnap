@@ -4,7 +4,7 @@ import { useSyncStore } from '../store/syncStore';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'sonner';
 
-const AUTO_SAVE_DELAY = 100000; // 10 secondes après le dernier changement
+const AUTO_SAVE_DELAY = 10000; // 10 secondes après le dernier changement
 const getSnapSignature = (snap: any): string => JSON.stringify(snap);
 
 export function useAutoSync() {
@@ -16,7 +16,7 @@ export function useAutoSync() {
   const { user, subscription } = useAuthStore();
   const { updateCloudSnap, status } = useSyncStore();
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedSignatureRef = useRef<string | null>(null);
   const isSavingRef = useRef(false);
 

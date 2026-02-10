@@ -6,6 +6,7 @@ export interface RecentSnapEntry {
   id: string;
   title: string;
   thumbnail?: string;
+  cloudSnapId?: string | null;
   savedAt: number;
   snap: Snap;
 }
@@ -15,7 +16,7 @@ interface RecentSnapsState {
   maxRecent: number;
   
   // Actions
-  addRecentSnap: (snap: Snap, thumbnail?: string) => void;
+  addRecentSnap: (snap: Snap, thumbnail?: string, cloudSnapId?: string | null) => void;
   removeRecentSnap: (id: string) => void;
   clearRecentSnaps: () => void;
   getRecentSnaps: () => RecentSnapEntry[];
@@ -27,21 +28,25 @@ export const useRecentSnapsStore = create<RecentSnapsState>()(
       recentSnaps: [],
       maxRecent: 10,
       
-      addRecentSnap: (snap: Snap, thumbnail?: string) => {
+      addRecentSnap: (snap: Snap, thumbnail?: string, cloudSnapId?: string | null) => {
         const id = `snap_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const entry: RecentSnapEntry = {
           id,
           title: snap.meta.title || 'Untitled',
           thumbnail,
+          cloudSnapId: cloudSnapId ?? null,
           savedAt: Date.now(),
           snap: JSON.parse(JSON.stringify(snap)), // Deep clone
         };
         
         set((state) => {
           // Remove duplicates with same title and similar content
-          const filtered = state.recentSnaps.filter(
-            (s) => s.title !== snap.meta.title
-          );
+          const filtered = state.recentSnaps.filter((s) => {
+            if (entry.cloudSnapId) {
+              return s.cloudSnapId !== entry.cloudSnapId;
+            }
+            return s.title !== snap.meta.title;
+          });
           
           // Add new entry at the beginning
           const updated = [entry, ...filtered];

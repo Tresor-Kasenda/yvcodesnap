@@ -16,7 +16,7 @@ import Canvas from '../components/Canvas';
 export default function Editor() {
     const stageRef = useRef<Konva.Stage>(null);
     const navigate = useNavigate();
-    const { snap, selectElement } = useCanvasStore();
+    const { snap, activeCloudSnapId, selectElement } = useCanvasStore();
     const { addRecentSnap } = useRecentSnapsStore();
     const [showLayersPanel, setShowLayersPanel] = useState(true);
     const [showInspector, setShowInspector] = useState(true);
@@ -24,7 +24,7 @@ export default function Editor() {
     const { commands } = useAppCommands();
 
     // Auto-sync pour les utilisateurs free avec un snap cloud actif
-    const { isAutoSyncEnabled, isSaving } = useAutoSync();
+    useAutoSync();
 
     // Keep the editor in a single scroll context: the page itself should not scroll.
     useEffect(() => {
@@ -53,10 +53,10 @@ export default function Editor() {
     // Handle going back to main screen
     const handleGoToMainScreen = useCallback(() => {
         if (snap.elements.length > 0) {
-            addRecentSnap(snap);
+            addRecentSnap(snap, undefined, activeCloudSnapId);
         }
         navigate('/');
-    }, [snap, addRecentSnap, navigate]);
+    }, [snap, addRecentSnap, navigate, activeCloudSnapId]);
 
     // Global Keyboard Shortcuts Binding
     useEffect(() => {

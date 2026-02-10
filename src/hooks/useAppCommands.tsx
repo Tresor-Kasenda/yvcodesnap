@@ -26,6 +26,7 @@ export interface Command {
 export const useAppCommands = () => {
     const {
         snap,
+        activeCloudSnapId,
         setTool,
         setShowGrid,
         showGrid,
@@ -67,7 +68,7 @@ export const useAppCommands = () => {
                         <button
                             onClick={() => {
                                 if (snap.elements.length > 0) {
-                                    addRecentSnap(snap);
+                                    addRecentSnap(snap, undefined, activeCloudSnapId);
                                 }
                                 newSnap({ title: 'Untitled', aspect: '16:9', width: 1920, height: 1080 });
                                 toast.dismiss(t);
@@ -82,7 +83,7 @@ export const useAppCommands = () => {
             ),
             { duration: Infinity }
         );
-    }, [snap, addRecentSnap, newSnap]);
+    }, [snap, addRecentSnap, newSnap, activeCloudSnapId]);
 
     const handleImportFile = useCallback(() => {
         const input = document.createElement('input');
@@ -92,7 +93,7 @@ export const useAppCommands = () => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 if (snap.elements.length > 0) {
-                    addRecentSnap(snap);
+                    addRecentSnap(snap, undefined, activeCloudSnapId);
                 }
                 saveToHistory();
                 const reader = new FileReader();
@@ -115,7 +116,7 @@ export const useAppCommands = () => {
                 input.parentNode.removeChild(input);
             }
         }, 0);
-    }, [snap, addRecentSnap, saveToHistory, importSnap]);
+    }, [snap, addRecentSnap, saveToHistory, importSnap, activeCloudSnapId]);
 
     const handleExportFile = useCallback(() => {
         try {
@@ -127,13 +128,13 @@ export const useAppCommands = () => {
             link.href = url;
             link.click();
             URL.revokeObjectURL(url);
-            addRecentSnap(snap);
+            addRecentSnap(snap, undefined, activeCloudSnapId);
             toast.success('Project exported');
         } catch (error) {
             console.error(error);
             toast.error('Export failed');
         }
-    }, [exportSnap, snap, addRecentSnap]);
+    }, [exportSnap, snap, addRecentSnap, activeCloudSnapId]);
 
     const handleImageUpload = useCallback(() => {
         const input = document.createElement('input');
