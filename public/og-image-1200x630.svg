@@ -1,0 +1,73 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="48" x2="1080" y2="582" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="690" y1="140" x2="1070" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1200" height="630" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="12"/>
+      <feGaussianBlur stdDeviation="12"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0.0666667 0 0 0 0 0.2 0 0 0 0.35 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" rx="36" fill="url(#bg)"/>
+
+  <circle cx="1098" cy="90" r="160" fill="#2563EB" fill-opacity="0.24"/>
+  <circle cx="102" cy="560" r="180" fill="#0EA5E9" fill-opacity="0.18"/>
+
+  <g filter="url(#shadow)">
+    <rect x="64" y="66" width="1072" height="498" rx="28" fill="#0B1222" fill-opacity="0.88"/>
+  </g>
+
+  <text x="120" y="180" fill="white" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="58" font-weight="700">
+    Turn Ideas Into
+  </text>
+  <text x="120" y="250" fill="#93C5FD" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="58" font-weight="700">
+    Stunning Visual Snaps
+  </text>
+  <text x="120" y="308" fill="#CBD5E1" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="28" font-weight="500">
+    Create, style, and export professional content with YvCode.
+  </text>
+
+  <rect x="120" y="352" width="286" height="70" rx="16" fill="#2563EB"/>
+  <text x="153" y="397" fill="white" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="30" font-weight="700">
+    Start for Free
+  </text>
+
+  <rect x="666" y="126" width="420" height="382" rx="24" fill="url(#panel)" stroke="#334155" stroke-width="2"/>
+  <rect x="698" y="166" width="356" height="40" rx="10" fill="#111827"/>
+  <text x="720" y="193" fill="#60A5FA" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="18" font-weight="500">
+    const snap = createVisual(code)
+  </text>
+  <rect x="698" y="226" width="356" height="40" rx="10" fill="#111827"/>
+  <text x="720" y="253" fill="#A78BFA" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="18" font-weight="500">
+    snap.theme = 'professional'
+  </text>
+  <rect x="698" y="286" width="356" height="40" rx="10" fill="#111827"/>
+  <text x="720" y="313" fill="#34D399" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="18" font-weight="500">
+    exportToPNG({ quality: 'high' })
+  </text>
+
+  <rect x="698" y="358" width="170" height="120" rx="14" fill="#0F172A" stroke="#1E40AF"/>
+  <rect x="884" y="358" width="170" height="120" rx="14" fill="#0F172A" stroke="#1E40AF"/>
+  <text x="729" y="427" fill="#E2E8F0" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="22" font-weight="600">
+    SEO Ready
+  </text>
+  <text x="915" y="427" fill="#E2E8F0" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="22" font-weight="600">
+    Offline Sync
+  </text>
+
+  <text x="120" y="515" fill="#93C5FD" font-family="'Google Sans', 'Inter', 'Segoe UI', sans-serif" font-size="34" font-weight="700">
+    yvcode.app
+  </text>
+</svg>

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { useThemeStore } from './store/themeStore'
+import { setupServiceWorker } from './pwa/registerServiceWorker'
 
 // Initialize theme before rendering
 const themeStore = useThemeStore.getState();
@@ -13,3 +14,5 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+setupServiceWorker();

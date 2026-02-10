@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /editor
+Disallow: /onboarding
+Disallow: /login
+Disallow: /auth
+Sitemap: https://yvcode.app/sitemap.xml
