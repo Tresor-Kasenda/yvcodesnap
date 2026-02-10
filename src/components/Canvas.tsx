@@ -1082,6 +1082,10 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
     width: width * zoom,
     height: height * zoom,
   }), [stagePos.x, stagePos.y, width, height, zoom]);
+  const canvasCursor = useMemo(
+    () => (isPanning ? 'grabbing' : spaceHeld ? 'grab' : tool !== 'select' ? 'crosshair' : 'grab'),
+    [isPanning, spaceHeld, tool]
+  );
 
   const wheelRaf = useRef<number | null>(null);
   const wheelEventRef = useRef<{
@@ -1189,6 +1193,14 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
     };
   }, []);
 
+  // Keep Konva container cursor in sync with current interaction mode.
+  // Some element-level handlers temporarily override it for resize/drag affordances.
+  useEffect(() => {
+    const stageContainer = stageRef.current?.container?.();
+    if (!stageContainer) return;
+    stageContainer.style.cursor = canvasCursor;
+  }, [stageRef, canvasCursor]);
+
   // Handle wheel/pinch zoom and pan on canvas (debounced to next animation frame for smoothness)
   const handleContainerWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     wheelEventRef.current = {
@@ -1260,7 +1272,7 @@ const Canvas: React.FC<CanvasProps> = ({ stageRef }) => {
       ref={containerRef}
       className="flex-1 bg-neutral-200 dark:bg-neutral-900 overflow-hidden relative touch-none"
       style={{
-        cursor: isPanning ? 'grabbing' : tool !== 'select' ? 'crosshair' : spaceHeld ? 'grab' : 'grab',
+        cursor: canvasCursor,
         touchAction: 'none' // Prevent default touch behaviors
       }}
       onWheel={handleContainerWheel}

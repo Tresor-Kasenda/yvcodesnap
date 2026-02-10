@@ -10,7 +10,7 @@ interface ArrowInspectorProps {
 
 const LABEL_CLASS = 'block text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:text-neutral-500 mb-2';
 const INPUT_CLASS =
-  'w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-sm border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none';
+  'w-full bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white px-3 py-2 rounded-lg text-[10px] border border-neutral-200 dark:border-white/5 focus:border-blue-500/50 focus:outline-none';
 const COLOR_INPUT_CLASS = 'flex-1 bg-transparent text-neutral-900 dark:text-white text-sm focus:outline-none font-mono';
 const SEGMENT_BUTTON_BASE = 'flex-1 py-2 rounded-md text-[10px] font-medium transition-all';
 const SEGMENT_BUTTON_ACTIVE = 'bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm';
@@ -353,7 +353,7 @@ const ArrowInspector: React.FC<ArrowInspectorProps> = ({ element }) => {
             value={element.props.color}
             onChange={(color) => updateProps({ color })}
             ariaLabel="Arrow color"
-            className="h-7 w-7"
+            className="h-4 w-4"
           />
           <input
             type="text"

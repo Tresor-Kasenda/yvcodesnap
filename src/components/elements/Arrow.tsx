@@ -214,6 +214,8 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
             controlPoints: newControlPoints || props.controlPoints,
           },
         });
+        const container = node.getStage()?.container();
+        if (container) container.style.cursor = '';
       }}
     >
       {/* If endpoints overlap/invalid, render a small dot instead of a shadowed arrow to avoid Konva draw crashes. */}
@@ -350,7 +352,7 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
               }}
               onMouseLeave={(e) => {
                 const container = e.target.getStage()?.container();
-                if (container) container.style.cursor = 'default';
+                if (container) container.style.cursor = '';
                 e.target.scale({ x: 1, y: 1 });
               }}
             />
@@ -400,7 +402,7 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
                   }}
                   onMouseLeave={(e) => {
                     const container = e.target.getStage()?.container();
-                    if (container) container.style.cursor = 'default';
+                    if (container) container.style.cursor = '';
                     e.target.scale({ x: 1, y: 1 });
                   }}
                 />
@@ -439,7 +441,7 @@ const Arrow: React.FC<ArrowProps> = ({ element, isSelected, onSelect, onChange, 
                   }}
                   onMouseLeave={(e) => {
                     const container = e.target.getStage()?.container();
-                    if (container) container.style.cursor = 'default';
+                    if (container) container.style.cursor = '';
                     e.target.scale({ x: 1, y: 1 });
                   }}
                 />

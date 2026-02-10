@@ -1,5 +1,5 @@
 import React from 'react';
-import { Group, Rect, Ellipse, Line, RegularPolygon, Star } from 'react-konva';
+import { Group, Rect, Ellipse, Line, RegularPolygon, Star, Circle } from 'react-konva';
 import type Konva from 'konva';
 import type { ShapeElement } from '../../types';
 import { useCanvasStore } from '../../store/canvasStore';
@@ -13,6 +13,7 @@ interface ShapeProps {
 }
 
 const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, draggable }) => {
+  const [isResizingRectangle, setIsResizingRectangle] = React.useState(false);
   const { props, width, height } = element;
   const lineEndpointSelection = useCanvasStore((state) => state.lineEndpointSelection);
   const setLineEndpointSelection = useCanvasStore((state) => state.setLineEndpointSelection);
@@ -46,6 +47,8 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
     // Reset group position
     node.x(0);
     node.y(0);
+    const container = node.getStage()?.container();
+    if (container) container.style.cursor = '';
   };
 
   const common = {
@@ -57,12 +60,12 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
       e.cancelBubble = true;
       onSelect();
     },
-    draggable: draggable ?? !element.locked,
+    draggable: (draggable ?? !element.locked) && !isResizingRectangle,
     onDragEnd: handleDragEnd,
     onDragMoveCapture: () => {
       const stage = (window as any)?.stageRef?.current?.getStage?.();
       const container = stage?.container?.();
-      if (container) container.style.cursor = element.locked ? 'default' : 'move';
+      if (container) container.style.cursor = element.locked ? '' : 'move';
     },
   };
 
@@ -142,7 +145,7 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
               }}
               onMouseLeave={(e) => {
                 const container = e.target.getStage()?.container();
-                if (container) container.style.cursor = 'default';
+                if (container) container.style.cursor = '';
                 e.target.scale({ x: 1, y: 1 });
               }}
             />
@@ -180,7 +183,7 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
               }}
               onMouseLeave={(e) => {
                 const container = e.target.getStage()?.container();
-                if (container) container.style.cursor = 'default';
+                if (container) container.style.cursor = '';
                 e.target.scale({ x: 1, y: 1 });
               }}
             />
@@ -193,28 +196,170 @@ const Shape: React.FC<ShapeProps> = ({ element, isSelected, onSelect, onChange, 
   if (props.kind === 'rectangle') {
     const cx = element.x + width / 2;
     const cy = element.y + height / 2;
+    const halfW = innerWidth / 2;
+    const halfH = innerHeight / 2;
+    const rotationDeg = element.rotation || 0;
+    const rotationRad = (rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rotationRad);
+    const sin = Math.sin(rotationRad);
+    const cornerHandleSize = 10;
+    const maxInsetX = Math.max(4, halfW - cornerHandleSize / 2 - 2);
+    const maxInsetY = Math.max(4, halfH - cornerHandleSize / 2 - 2);
+    const cornerPointInset = Math.min(26, maxInsetX, maxInsetY);
+
+    const rotateToWorld = (localX: number, localY: number) => ({
+      x: cx + localX * cos - localY * sin,
+      y: cy + localX * sin + localY * cos,
+    });
+
+    const corners = {
+      tl: rotateToWorld(-halfW, -halfH),
+      tr: rotateToWorld(halfW, -halfH),
+      br: rotateToWorld(halfW, halfH),
+      bl: rotateToWorld(-halfW, halfH),
+    } as const;
+
+    const cornerOrder = ['tl', 'tr', 'br', 'bl'] as const;
+    const oppositeCorner = {
+      tl: 'br',
+      tr: 'bl',
+      br: 'tl',
+      bl: 'tr',
+    } as const;
+    const defaultSign = {
+      tl: { x: -1, y: -1 },
+      tr: { x: 1, y: -1 },
+      br: { x: 1, y: 1 },
+      bl: { x: -1, y: 1 },
+    } as const;
+
+    const resizeFromCorner = (corner: typeof cornerOrder[number], worldX: number, worldY: number) => {
+      const fixed = corners[oppositeCorner[corner]];
+      const fixedToDraggedWorld = { x: worldX - fixed.x, y: worldY - fixed.y };
+      const fixedToDraggedLocal = {
+        x: fixedToDraggedWorld.x * cos + fixedToDraggedWorld.y * sin,
+        y: -fixedToDraggedWorld.x * sin + fixedToDraggedWorld.y * cos,
+      };
+
+      const nextInnerWidth = Math.max(1, Math.abs(fixedToDraggedLocal.x));
+      const nextInnerHeight = Math.max(1, Math.abs(fixedToDraggedLocal.y));
+      const signX = fixedToDraggedLocal.x === 0 ? defaultSign[corner].x : Math.sign(fixedToDraggedLocal.x);
+      const signY = fixedToDraggedLocal.y === 0 ? defaultSign[corner].y : Math.sign(fixedToDraggedLocal.y);
+
+      const localCenterFromFixed = {
+        x: signX * nextInnerWidth / 2,
+        y: signY * nextInnerHeight / 2,
+      };
+      const worldCenter = {
+        x: fixed.x + localCenterFromFixed.x * cos - localCenterFromFixed.y * sin,
+        y: fixed.y + localCenterFromFixed.x * sin + localCenterFromFixed.y * cos,
+      };
+
+      const nextWidth = nextInnerWidth + padding * 2;
+      const nextHeight = nextInnerHeight + padding * 2;
+
+      onChange({
+        x: worldCenter.x - nextWidth / 2,
+        y: worldCenter.y - nextHeight / 2,
+        width: nextWidth,
+        height: nextHeight,
+      });
+    };
+
     const cornerRadius = Math.max(
       0,
       Math.min(props.cornerRadius ?? 6, innerWidth / 2, innerHeight / 2)
     );
+
     return (
       <Group {...common}>
         {isSelected && (
-          <Rect
+          <Group
             x={cx}
             y={cy}
-            offsetX={(innerWidth + 8) / 2}
-            offsetY={(innerHeight + 8) / 2}
-            width={innerWidth + 8}
-            height={innerHeight + 8}
-            cornerRadius={8}
-            stroke={outlineColor}
-            strokeWidth={1.5}
-            dash={[6, 4]}
-            rotation={element.rotation}
+            rotation={rotationDeg}
             listening={false}
-          />
+          >
+            <Rect
+              x={-halfW}
+              y={-halfH}
+              width={innerWidth}
+              height={innerHeight}
+              stroke={outlineColor}
+              strokeWidth={2}
+              fillEnabled={false}
+              cornerRadius={Math.max(0, Math.min(cornerRadius, halfW, halfH))}
+            />
+            {cornerOrder.map((cornerKey) => {
+              const corner = {
+                x: cornerKey === 'tl' || cornerKey === 'bl' ? -halfW : halfW,
+                y: cornerKey === 'tl' || cornerKey === 'tr' ? -halfH : halfH,
+              };
+              return (
+                <Circle
+                  key={`point-${cornerKey}`}
+                  x={corner.x + (corner.x < 0 ? cornerPointInset : -cornerPointInset)}
+                  y={corner.y + (corner.y < 0 ? cornerPointInset : -cornerPointInset)}
+                  radius={7}
+                  fill="#e0f2fe"
+                  stroke={outlineColor}
+                  strokeWidth={2}
+                />
+              );
+            })}
+          </Group>
         )}
+        {isSelected && cornerOrder.map((corner) => {
+          const point = corners[corner];
+          const cursor = corner === 'tl' || corner === 'br' ? 'nwse-resize' : 'nesw-resize';
+          return (
+            <Rect
+              key={`corner-handle-${corner}`}
+              x={point.x}
+              y={point.y}
+              width={cornerHandleSize}
+              height={cornerHandleSize}
+              offsetX={cornerHandleSize / 2}
+              offsetY={cornerHandleSize / 2}
+              fill="#ffffff"
+              stroke={outlineColor}
+              strokeWidth={2}
+              shadowColor="rgba(0,0,0,0.15)"
+              shadowBlur={3}
+              shadowOffset={{ x: 0, y: 1 }}
+              draggable={!element.locked}
+              onDragStart={(e) => {
+                e.cancelBubble = true;
+                setIsResizingRectangle(true);
+                const parent = e.target.getParent();
+                parent?.stopDrag?.();
+              }}
+              onMouseDown={(e) => {
+                e.cancelBubble = true;
+                onSelect();
+              }}
+              onTap={(e) => {
+                e.cancelBubble = true;
+                onSelect();
+              }}
+              onDragMove={(e) => resizeFromCorner(corner, e.target.x(), e.target.y())}
+              onDragEnd={(e) => {
+                resizeFromCorner(corner, e.target.x(), e.target.y());
+                setIsResizingRectangle(false);
+              }}
+              onMouseEnter={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = cursor;
+                e.target.scale({ x: 1.2, y: 1.2 });
+              }}
+              onMouseLeave={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) container.style.cursor = '';
+                e.target.scale({ x: 1, y: 1 });
+              }}
+            />
+          );
+        })}
         <Rect
           x={cx}
           y={cy}
