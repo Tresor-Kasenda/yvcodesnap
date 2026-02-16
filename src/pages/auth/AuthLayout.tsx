@@ -4,59 +4,59 @@ import { Zap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 interface AuthLayoutProps {
-  children: ReactNode;
-  footer?: ReactNode;
+    children: ReactNode;
+    footer?: ReactNode;
 }
 
 export default function AuthLayout({ children, footer }: AuthLayoutProps) {
-  const { user, hasCompletedOnboarding } = useAuthStore();
+    const { user, hasCompletedOnboarding } = useAuthStore();
 
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
 
-    html.classList.add('auth-scrollbar');
-    body.classList.add('auth-scrollbar');
-    html.classList.add('auth-no-scroll');
-    body.classList.add('auth-no-scroll');
+        html.classList.add('auth-scrollbar');
+        body.classList.add('auth-scrollbar');
+        html.classList.add('auth-no-scroll');
+        body.classList.add('auth-no-scroll');
 
-    return () => {
-      html.classList.remove('auth-scrollbar');
-      body.classList.remove('auth-scrollbar');
-      html.classList.remove('auth-no-scroll');
-      body.classList.remove('auth-no-scroll');
-    };
-  }, []);
+        return () => {
+            html.classList.remove('auth-scrollbar');
+            body.classList.remove('auth-scrollbar');
+            html.classList.remove('auth-no-scroll');
+            body.classList.remove('auth-no-scroll');
+        };
+    }, []);
 
-  if (user) {
-    return <Navigate to={hasCompletedOnboarding ? '/editor' : '/onboarding'} replace />;
-  }
+    if (user) {
+        return <Navigate to={hasCompletedOnboarding ? '/editor' : '/onboarding'} replace />;
+    }
 
-  return (
-    <div className="h-screen bg-neutral-50 dark:bg-[#09090b] text-neutral-900 dark:text-white relative overflow-hidden px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-15 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[760px] h-[420px] bg-blue-500/15 blur-[140px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[520px] h-[360px] bg-violet-500/12 blur-[130px] rounded-full pointer-events-none" />
+    return (
+        <div className="h-screen bg-neutral-50 dark:bg-[#09090b] text-neutral-900 dark:text-white relative overflow-hidden px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-15 pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[760px] h-[420px] bg-blue-500/15 blur-[140px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[520px] h-[360px] bg-violet-500/12 blur-[130px] rounded-full pointer-events-none" />
 
-      <div className="relative max-w-lg mx-auto h-full flex items-center">
-        <section className="w-full rounded-xl border border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-xl p-6 sm:p-8">
-          <div className="space-y-6">
-            <Link to="/" className="flex items-center justify-center gap-3 group">
-              <span className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
-                <Zap className="w-7 h-7 text-white" />
-              </span>
-            </Link>
+            <div className="relative max-w-lg mx-auto h-full flex items-center">
+                <section className="w-full rounded-xl border border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-white/5 backdrop-blur-xl p-6 sm:p-8">
+                    <div className="space-y-6">
+                        <Link to="/" className="flex items-center justify-center gap-3 group">
+                            <span className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
+                                <Zap className="w-7 h-7 text-white" />
+                            </span>
+                        </Link>
 
-            <div className="space-y-4">{children}</div>
+                        <div className="space-y-4">{children}</div>
 
-            {footer && (
-              <div className="pt-3 border-t border-neutral-200 dark:border-white/10 text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
-                {footer}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-    </div>
-  );
+                        {footer && (
+                            <div className="pt-3 border-t border-neutral-200 dark:border-white/10 text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
+                                {footer}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
 }

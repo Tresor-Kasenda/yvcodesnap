@@ -2,26 +2,26 @@ import { useEffect, useCallback } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
 
 export function useKeyboardShortcuts() {
-  const {
-    selectedElementIds,
-    deleteElement,
-    duplicateElement,
-    undo,
-    redo,
-    setZoom,
-    zoom,
-    showGrid,
-    setShowGrid,
-    setTool,
-  } = useCanvasStore();
+    const {
+        selectedElementIds,
+        deleteElement,
+        duplicateElement,
+        undo,
+        redo,
+        setZoom,
+        zoom,
+        showGrid,
+        setShowGrid,
+        setTool,
+    } = useCanvasStore();
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            // Don't trigger shortcuts when typing in inputs
+            const target = e.target as HTMLElement | null;
+            if (!target) return;
 
-      // Allow native shortcuts (copy/paste, select all, etc.) inside form fields or editable blocks
+            // Allow native shortcuts (copy/paste, select all, etc.) inside form fields or editable blocks
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||

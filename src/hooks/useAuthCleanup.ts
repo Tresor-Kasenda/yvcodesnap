@@ -6,12 +6,12 @@ import { useAuthStore } from '../store/authStore';
  * Prevents memory leaks from onAuthStateChange listener
  */
 export function useAuthCleanup() {
-  const cleanup = useAuthStore((state) => state.cleanup);
+    const cleanup = useAuthStore((state) => state.cleanup);
 
-  useEffect(() => {
-    // Cleanup on app unmount
-    return () => {
-      cleanup();
-    };
-  }, [cleanup]);
+    useEffect(() => {
+        // Cleanup on app unmount
+        return () => {
+            cleanup();
+        };
+    }, [cleanup]);
 }

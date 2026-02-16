@@ -150,7 +150,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
                                             (cmd.id === 'select' && tool === 'select') || cmd.id === tool
                                         );
 
-                                        // @ts-ignore
+                                        // @ts-expect-error
                                         return (
                                             <button
                                                 key={`${cmd.id}-${globalIndex}`} // Use compound key or simple index if id duplicates possible (unlikely)
